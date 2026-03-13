@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Electricity Daily Log</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <section class="control-strip">
+        <div class="control-row info-row">
+          <div class="control-group">
+            <span class="strip-label">Sheet Date</span>
+            <strong id="sheetDateLabel">No date selected</strong>
+          </div>
+          <div class="control-group">
+            <span class="strip-label">Active Hour</span>
+            <strong id="activeHourLabel">-</strong>
+          </div>
+          <div class="control-group stretch">
+            <span class="strip-label">Current Field</span>
+            <input id="fieldName" type="text" readonly />
+          </div>
+          <button id="openSetupButton" class="ghost-button" type="button">
+            Change Date
+          </button>
+          <button id="resetSheetButton" class="ghost-button" type="button">
+            Reset Sheet
+          </button>
+        </div>
+
+        <div class="control-row action-row">
+          <button
+            id="voiceButton"
+            class="ghost-button voice-button"
+            type="button"
+          >
+            Start Talking
+          </button>
+          <button id="cameraButton" class="ghost-button" type="button">
+            Open Camera
+          </button>
+          <div class="control-group value-group">
+            <span class="strip-label">Value</span>
+            <input
+              id="fieldValue"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              placeholder="Type or speak the reading"
+            />
+          </div>
+          <button id="backFieldButton" class="ghost-button" type="button">
+            Back
+          </button>
+          <button id="saveFieldButton" class="primary-button" type="button">
+            Save And Next
+          </button>
+          <button id="manageSkipsButton" class="ghost-button" type="button">
+            Skip Spots
+          </button>
+        </div>
+      </section>
+
+      <section class="status-strip">
+        <span id="voiceStatus" class="voice-status"
+          >You can type or use the microphone.</span
+        >
+        <span id="progressLabel">Field 0 of 0</span>
+        <span id="completionLabel">0%</span>
+        <span id="saveStatus" class="save-status">Ready</span>
+      </section>
+
+      <main class="sheet-stage">
+        <div class="sheet-paper">
+          <div class="paper-header">
+            <div class="date-line">
+              <span class="date-label">Date :</span>
+              <span id="dateDay" class="date-slot"></span>
+              <span class="slash">/</span>
+              <span id="dateMonth" class="date-slot"></span>
+              <span class="slash">/</span>
+              <span id="dateYear" class="date-slot wide"></span>
+            </div>
+            <h1>DAILY OPERATION LOG SHEET</h1>
+          </div>
+
+          <div class="sheet-wrap">
+            <table id="logTable" class="log-table"></table>
+          </div>
+
+          <div class="sf6-wrap">
+            <table id="sf6Table" class="sf6-table"></table>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <dialog id="setupDialog">
+      <form id="setupForm" class="setup-form" method="dialog">
+        <h2>Start Daily Sheet</h2>
+        <p>Choose the date and the hour you want to start entering.</p>
+
+        <label for="sheetDate">Date</label>
+        <input id="sheetDate" name="sheetDate" type="date" required />
+
+        <label for="startHour">Hour</label>
+        <select id="startHour" name="startHour" required></select>
+
+        <div class="setup-actions">
+          <button id="cancelSetupButton" class="ghost-button" type="button">
+            Close
+          </button>
+          <button class="primary-button" type="submit">Open Sheet</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="skipDialog">
+      <form id="skipForm" class="setup-form skip-form" method="dialog">
+        <h2>Skip Spots For This Day</h2>
+        <p>
+          Select the spots you do not want to enter today. `Save And Next` will
+          jump over them.
+        </p>
+        <div id="skipFieldList" class="skip-field-list"></div>
+        <div class="setup-actions">
+          <button id="cancelSkipButton" class="ghost-button" type="button">
+            Close
+          </button>
+          <button class="primary-button" type="submit">Save Skips</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="headerDialog">
+      <form id="headerForm" class="setup-form" method="dialog">
+        <h2>Edit Header</h2>
+        <p class="header-help-text">
+          Change the main label, add a second label underneath it, and choose
+          how the text should be displayed.
+        </p>
+
+        <label for="headerTextInput">Main Label</label>
+        <input
+          id="headerTextInput"
+          name="headerTextInput"
+          type="text"
+          required
+        />
+
+        <label for="headerSubTextInput">Second Label Underneath</label>
+        <input id="headerSubTextInput" name="headerSubTextInput" type="text" />
+
+        <label>Direction</label>
+        <div class="orientation-buttons">
+          <button
+            id="headerHorizontalButton"
+            class="ghost-button orientation-button"
+            type="button"
+          >
+            Horizontal
+          </button>
+          <button
+            id="headerVerticalButton"
+            class="ghost-button orientation-button"
+            type="button"
+          >
+            Vertical
+          </button>
+        </div>
+
+        <div class="setup-actions">
+          <button id="cancelHeaderButton" class="ghost-button" type="button">
+            Close
+          </button>
+          <button id="resetHeaderButton" class="ghost-button" type="button">
+            Reset Label
+          </button>
+          <button class="primary-button" type="submit">Save Header</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="cameraDialog">
+      <div class="setup-form camera-form">
+        <h2>Camera Capture</h2>
+        <p>Point the camera at the meter number, then capture a photo.</p>
+        <video
+          id="cameraVideo"
+          class="camera-video"
+          autoplay
+          playsinline
+          muted
+        ></video>
+        <canvas id="cameraCanvas" class="camera-canvas" hidden></canvas>
+        <img
+          id="cameraSnapshot"
+          class="camera-snapshot"
+          alt="Captured meter reading"
+          hidden
+        />
+        <p id="cameraStatus" class="voice-status">
+          Camera is ready when you open it.
+        </p>
+        <div class="setup-actions">
+          <button id="closeCameraButton" class="ghost-button" type="button">
+            Close
+          </button>
+          <button id="captureCameraButton" class="ghost-button" type="button">
+            Capture
+          </button>
+          <button id="retakeCameraButton" class="ghost-button" type="button">
+            Retake
+          </button>
+        </div>
+      </div>
+    </dialog>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
