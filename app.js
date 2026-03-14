@@ -310,6 +310,15 @@ const languageLabel = document.getElementById("languageLabel");
 const languageSelect = document.getElementById("languageSelect");
 const closeSettingsButton = document.getElementById("closeSettingsButton");
 const saveSettingsButton = document.getElementById("saveSettingsButton");
+const settingsChangeDateButton = document.getElementById(
+  "settingsChangeDateButton",
+);
+const settingsResetSheetButton = document.getElementById(
+  "settingsResetSheetButton",
+);
+const settingsSkipSpotsButton = document.getElementById(
+  "settingsSkipSpotsButton",
+);
 const SpeechRecognitionApi =
   window.SpeechRecognition || window.webkitSpeechRecognition;
 const currentFieldGroup = currentFieldText.closest(".control-group");
@@ -370,6 +379,9 @@ function applyLanguage() {
   languageLabel.textContent = t("language");
   closeSettingsButton.textContent = t("close");
   saveSettingsButton.textContent = t("saveSettings");
+  settingsChangeDateButton.textContent = t("changeDate");
+  settingsResetSheetButton.textContent = t("resetSheet");
+  settingsSkipSpotsButton.textContent = t("skipSpots");
   fieldValueInput.placeholder = t("valuePlaceholder");
 
   if (!state.date) {
@@ -1639,6 +1651,21 @@ settingsButton.addEventListener("click", () => {
 
 closeSettingsButton.addEventListener("click", () => {
   settingsDialog.close();
+});
+
+settingsChangeDateButton.addEventListener("click", () => {
+  settingsDialog.close();
+  openSetupButton.click();
+});
+
+settingsResetSheetButton.addEventListener("click", () => {
+  settingsDialog.close();
+  resetSheet();
+});
+
+settingsSkipSpotsButton.addEventListener("click", () => {
+  settingsDialog.close();
+  manageSkipsButton.click();
 });
 
 settingsForm.addEventListener("submit", (event) => {

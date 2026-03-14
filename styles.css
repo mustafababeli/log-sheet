@@ -523,6 +523,11 @@ dialog::backdrop {
   margin-top: 8px;
 }
 
+.settings-mobile-actions {
+  display: grid;
+  gap: 10px;
+}
+
 html[dir="rtl"] body {
   direction: rtl;
 }
@@ -620,6 +625,12 @@ html[dir="rtl"] .sf6-table {
     border-radius: 0;
   }
 
+  #openSetupButton,
+  #resetSheetButton,
+  #manageSkipsButton {
+    display: none;
+  }
+
   .control-row {
     flex-direction: column;
     gap: 10px;
@@ -704,6 +715,24 @@ html[dir="rtl"] .sf6-table {
     grid-template-columns: 1fr 1fr;
     width: 100%;
     gap: 10px;
+  }
+
+  .action-row {
+    display: grid;
+    grid-template-columns: 0.6fr 1.4fr;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .action-row .input-types-div,
+  .action-row .control-group,
+  .action-row .control-group.value-group {
+    grid-column: 1 / -1;
+  }
+
+  #backFieldButton,
+  #saveFieldButton {
+    width: 100%;
   }
 
   .action-row .input-types-div .ghost-button {
