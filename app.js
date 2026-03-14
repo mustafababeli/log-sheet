@@ -186,6 +186,57 @@ const SF6_COLUMNS = [
 ];
 const STORAGE_PREFIX = "electricity-log-sheet";
 const HEADER_STORAGE_KEY = `${STORAGE_PREFIX}-header-overrides`;
+const SETTINGS_STORAGE_KEY = `${STORAGE_PREFIX}-settings`;
+const UI_TEXT = {
+  en: {
+    sheetDate: "Sheet Date",
+    activeHour: "Active Hour",
+    currentField: "Current Field",
+    value: "Value",
+    changeDate: "Change Date",
+    resetSheet: "Reset Sheet",
+    settings: "Settings",
+    startTalking: "Start Talking",
+    stopTalking: "Stop Talking",
+    openCamera: "Open Camera",
+    back: "Back",
+    saveAndNext: "Save And Next",
+    skipSpots: "Skip Spots",
+    exportExcel: "Export Excel",
+    shareSheet: "Share Sheet",
+    settingsTitle: "Settings",
+    language: "Language",
+    close: "Close",
+    saveSettings: "Save Settings",
+    valuePlaceholder: "Type or speak the reading",
+    noDateSelected: "No date selected",
+    ready: "Ready",
+  },
+  ar: {
+    sheetDate: "تاريخ الورقة",
+    activeHour: "الساعة الحالية",
+    currentField: "الحقل الحالي",
+    value: "القيمة",
+    changeDate: "تغيير التاريخ",
+    resetSheet: "إعادة ضبط الورقة",
+    settings: "الإعدادات",
+    startTalking: "ابدأ التحدث",
+    stopTalking: "إيقاف التحدث",
+    openCamera: "فتح الكاميرا",
+    back: "رجوع",
+    saveAndNext: "حفظ والانتقال",
+    skipSpots: "تخطي خانات",
+    exportExcel: "تصدير إكسل",
+    shareSheet: "مشاركة الورقة",
+    settingsTitle: "الإعدادات",
+    language: "اللغة",
+    close: "إغلاق",
+    saveSettings: "حفظ الإعدادات",
+    valuePlaceholder: "اكتب أو انطق القراءة",
+    noDateSelected: "لم يتم اختيار تاريخ",
+    ready: "جاهز",
+  },
+};
 
 const state = {
   date: "",
@@ -195,6 +246,7 @@ const state = {
   skippedFields: [],
   headerOverrides: {},
   editingHeaderId: null,
+  language: "en",
 };
 
 const setupDialog = document.getElementById("setupDialog");
@@ -211,6 +263,7 @@ const cancelHeaderButton = document.getElementById("cancelHeaderButton");
 const openSetupButton = document.getElementById("openSetupButton");
 const manageSkipsButton = document.getElementById("manageSkipsButton");
 const resetSheetButton = document.getElementById("resetSheetButton");
+const settingsButton = document.getElementById("settingsButton");
 const resetHeaderButton = document.getElementById("resetHeaderButton");
 const cameraButton = document.getElementById("cameraButton");
 const closeCameraButton = document.getElementById("closeCameraButton");
@@ -224,6 +277,10 @@ const fieldValueInput = document.getElementById("fieldValue");
 const voiceButton = document.getElementById("voiceButton");
 const voiceStatus = document.getElementById("voiceStatus");
 const backFieldButton = document.getElementById("backFieldButton");
+const sheetDateText = document.getElementById("sheetDateText");
+const activeHourText = document.getElementById("activeHourText");
+const currentFieldText = document.getElementById("currentFieldText");
+const valueText = document.getElementById("valueText");
 const sheetDateLabel = document.getElementById("sheetDateLabel");
 const activeHourLabel = document.getElementById("activeHourLabel");
 const progressLabel = document.getElementById("progressLabel");
@@ -246,6 +303,13 @@ const cameraVideo = document.getElementById("cameraVideo");
 const cameraCanvas = document.getElementById("cameraCanvas");
 const cameraSnapshot = document.getElementById("cameraSnapshot");
 const cameraStatus = document.getElementById("cameraStatus");
+const settingsDialog = document.getElementById("settingsDialog");
+const settingsForm = document.getElementById("settingsForm");
+const settingsTitle = document.getElementById("settingsTitle");
+const languageLabel = document.getElementById("languageLabel");
+const languageSelect = document.getElementById("languageSelect");
+const closeSettingsButton = document.getElementById("closeSettingsButton");
+const saveSettingsButton = document.getElementById("saveSettingsButton");
 const SpeechRecognitionApi =
   window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -253,6 +317,60 @@ let recognition = null;
 let isListening = false;
 let cameraStream = null;
 let selectedHeaderOrientation = "horizontal";
+
+function t(key) {
+  return UI_TEXT[state.language]?.[key] || UI_TEXT.en[key] || key;
+}
+
+function loadSettings() {
+  const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
+  if (!saved) {
+    return { language: "en" };
+  }
+
+  try {
+    const parsed = JSON.parse(saved);
+    return { language: parsed.language === "ar" ? "ar" : "en" };
+  } catch {
+    return { language: "en" };
+  }
+}
+
+function saveSettings() {
+  localStorage.setItem(
+    SETTINGS_STORAGE_KEY,
+    JSON.stringify({
+      language: state.language,
+    }),
+  );
+}
+
+function applyLanguage() {
+  document.documentElement.lang = state.language === "ar" ? "ar" : "en";
+  document.documentElement.dir = state.language === "ar" ? "rtl" : "ltr";
+  sheetDateText.textContent = t("sheetDate");
+  activeHourText.textContent = t("activeHour");
+  currentFieldText.textContent = t("currentField");
+  valueText.textContent = t("value");
+  openSetupButton.textContent = t("changeDate");
+  resetSheetButton.textContent = t("resetSheet");
+  voiceButton.textContent = isListening ? t("stopTalking") : t("startTalking");
+  cameraButton.textContent = t("openCamera");
+  backFieldButton.textContent = t("back");
+  saveFieldButton.textContent = t("saveAndNext");
+  manageSkipsButton.textContent = t("skipSpots");
+  exportExcelButton.textContent = t("exportExcel");
+  shareSheetButton.textContent = t("shareSheet");
+  settingsTitle.textContent = t("settingsTitle");
+  languageLabel.textContent = t("language");
+  closeSettingsButton.textContent = t("close");
+  saveSettingsButton.textContent = t("saveSettings");
+  fieldValueInput.placeholder = t("valuePlaceholder");
+
+  if (!state.date) {
+    sheetDateLabel.textContent = t("noDateSelected");
+  }
+}
 
 function setVoiceStatus(message, status = "idle") {
   voiceStatus.textContent = message;
@@ -269,7 +387,7 @@ function setVoiceStatus(message, status = "idle") {
 
 function setListeningState(listening) {
   isListening = listening;
-  voiceButton.textContent = listening ? "Stop Talking" : "Start Talking";
+  voiceButton.textContent = listening ? t("stopTalking") : t("startTalking");
 }
 
 function normalizeTranscript(transcript) {
@@ -1104,6 +1222,7 @@ function updateDateReplica() {
     dateDay.textContent = "";
     dateMonth.textContent = "";
     dateYear.textContent = "";
+    sheetDateLabel.textContent = t("noDateSelected");
     return;
   }
 
@@ -1182,7 +1301,7 @@ function openSheet(date, hourIndex) {
   state.date = date;
   state.entries = loadEntries(date);
   state.skippedFields = loadSkippedFields(date);
-  saveStatus.textContent = "Ready";
+  saveStatus.textContent = t("ready");
   setActiveHour(hourIndex);
 }
 
@@ -1280,9 +1399,6 @@ setupForm.addEventListener("submit", (event) => {
 });
 
 cancelSetupButton.addEventListener("click", () => {
-  if (!state.date) {
-    return;
-  }
   setupDialog.close();
 });
 
@@ -1496,10 +1612,31 @@ cameraDialog.addEventListener("close", () => {
   stopCamera();
 });
 
+settingsButton.addEventListener("click", () => {
+  languageSelect.value = state.language;
+  settingsDialog.showModal();
+});
+
+closeSettingsButton.addEventListener("click", () => {
+  settingsDialog.close();
+});
+
+settingsForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  state.language = languageSelect.value === "ar" ? "ar" : "en";
+  saveSettings();
+  applyLanguage();
+  refreshUi();
+  settingsDialog.close();
+});
+
 populateHourOptions();
+state.language = loadSettings().language;
 state.headerOverrides = loadHeaderOverrides();
 setupVoiceRecognition();
+applyLanguage();
 renderTable();
-sheetDateInput.value = getToday();
+const initialDate = getToday();
+sheetDateInput.value = initialDate;
 startHourSelect.value = "0";
-setupDialog.showModal();
+openSheet(initialDate, 0);

@@ -31,6 +31,27 @@ select {
 .app-shell {
   min-height: 100vh;
   padding: 18px;
+  position: relative;
+}
+
+.settings-icon-button {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(68, 68, 68, 0);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0);
+  background-image: url("./assets/settings.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 20px 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
 }
 
 .control-strip,
@@ -504,6 +525,19 @@ dialog::backdrop {
   margin-top: 8px;
 }
 
+html[dir="rtl"] body {
+  direction: rtl;
+}
+
+html[dir="rtl"] .sheet-stage,
+html[dir="rtl"] .sheet-paper,
+html[dir="rtl"] .paper-header,
+html[dir="rtl"] .sheet-wrap,
+html[dir="rtl"] .log-table,
+html[dir="rtl"] .sf6-table {
+  direction: ltr;
+}
+
 .skip-field-list {
   max-height: 360px;
   overflow: auto;
@@ -562,6 +596,13 @@ dialog::backdrop {
 
   .app-shell {
     padding: 10px;
+  }
+
+  .settings-icon-button {
+    top: 10px;
+    right: 10px;
+    width: 42px;
+    height: 42px;
   }
 
   .control-strip,
