@@ -91,11 +91,6 @@ select {
   width: 240px;
 }
 
-.info-row .control-group,
-.action-row .control-group {
-  min-height: 73px;
-}
-
 .strip-label {
   font-size: 0.78rem;
   color: var(--muted);
