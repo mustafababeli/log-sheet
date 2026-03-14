@@ -1,18 +1,60 @@
 const HOURS = [
-  "8:00", "9:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00",
-  "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00",
-  "24:00", "1:00", "2:00", "3:00", "4:00", "5:00", "6:00", "7:00"
+  "8:00",
+  "9:00",
+  "10:00",
+  "11:00",
+  "12:00",
+  "13:00",
+  "14:00",
+  "15:00",
+  "16:00",
+  "17:00",
+  "18:00",
+  "19:00",
+  "20:00",
+  "21:00",
+  "22:00",
+  "23:00",
+  "24:00",
+  "1:00",
+  "2:00",
+  "3:00",
+  "4:00",
+  "5:00",
+  "6:00",
+  "7:00",
 ];
 
 const HOUR_OPTIONS = [
-  "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00",
-  "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00",
-  "24:00", "01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "07:00"
+  "08:00",
+  "09:00",
+  "10:00",
+  "11:00",
+  "12:00",
+  "13:00",
+  "14:00",
+  "15:00",
+  "16:00",
+  "17:00",
+  "18:00",
+  "19:00",
+  "20:00",
+  "21:00",
+  "22:00",
+  "23:00",
+  "24:00",
+  "01:00",
+  "02:00",
+  "03:00",
+  "04:00",
+  "05:00",
+  "06:00",
+  "07:00",
 ];
 
 const L_GROUPS = Array.from({ length: 8 }, (_, index) => ({
   group: `L${index + 1}`,
-  fields: ["KV", "A", "MVR"]
+  fields: ["KV", "A", "MVR"],
 }));
 
 const MT_GROUPS = ["M. TR1", "M. TR2", "M. TR3"].map((group) => ({
@@ -22,8 +64,8 @@ const MT_GROUPS = ["M. TR1", "M. TR2", "M. TR3"].map((group) => ({
     { label: "KV", unit: "KV" },
     { label: "A", unit: "A" },
     { label: "ACTV", unit: "MW" },
-    { label: "REACTOR", unit: "MVA" }
-  ]
+    { label: "REACTOR", unit: "MVA" },
+  ],
 }));
 
 const FEEDERS_33 = Array.from({ length: 15 }, (_, index) => String(index + 1));
@@ -34,16 +76,16 @@ const FIELD_GROUPS = [
   ...MT_GROUPS,
   {
     group: "FEEDERS 33 KV",
-    fields: FEEDERS_33
+    fields: FEEDERS_33,
   },
   {
     group: "FEEDERS 11 KV",
-    fields: FEEDERS_11
+    fields: FEEDERS_11,
   },
   {
     group: "TEMPRETURE",
-    fields: ["TR.1 W", "TR.1 O", "TR.2 W", "TR.2 O", "TR.3 W", "TR.3 O"]
-  }
+    fields: ["TR.1 W", "TR.1 O", "TR.2 W", "TR.2 O", "TR.3 W", "TR.3 O"],
+  },
 ];
 
 const FLAT_FIELDS = [
@@ -54,8 +96,8 @@ const FLAT_FIELDS = [
       label: field,
       fullLabel: `${group.group} - ${field}`,
       groupHeaderId: `group-${group.group}`,
-      labelHeaderId: `l-${group.group}-${fieldIndex}`
-    }))
+      labelHeaderId: `l-${group.group}-${fieldIndex}`,
+    })),
   ),
   ...MT_GROUPS.flatMap((group, groupIndex) =>
     group.fields.map((field, fieldIndex) => ({
@@ -64,8 +106,8 @@ const FLAT_FIELDS = [
       label: field.label,
       fullLabel: `${group.group} - ${field.label}`,
       groupHeaderId: `group-${group.group}`,
-      labelHeaderId: `mt-label-${groupIndex}-${fieldIndex}`
-    }))
+      labelHeaderId: `mt-label-${groupIndex}-${fieldIndex}`,
+    })),
   ),
   ...FEEDERS_33.map((field, fieldIndex) => ({
     key: `FEEDERS 33 KV__${field}`,
@@ -73,7 +115,7 @@ const FLAT_FIELDS = [
     label: field,
     fullLabel: `FEEDERS 33 KV - ${field}`,
     groupHeaderId: "feeders-33",
-    labelHeaderId: `feed33-${fieldIndex}`
+    labelHeaderId: `feed33-${fieldIndex}`,
   })),
   ...FEEDERS_11.map((field, fieldIndex) => ({
     key: `FEEDERS 11 KV__${field}`,
@@ -81,24 +123,67 @@ const FLAT_FIELDS = [
     label: field,
     fullLabel: `FEEDERS 11 KV - ${field}`,
     groupHeaderId: "feeders-11",
-    labelHeaderId: `feed11-${fieldIndex}`
+    labelHeaderId: `feed11-${fieldIndex}`,
   })),
   ...[
-    { key: "TEMPRETURE__TR.1 W", label: "TR.1 W", subgroupHeaderId: "temperature-tr1", labelHeaderId: "temperature-unit-0" },
-    { key: "TEMPRETURE__TR.1 O", label: "TR.1 O", subgroupHeaderId: "temperature-tr1", labelHeaderId: "temperature-unit-1" },
-    { key: "TEMPRETURE__TR.2 W", label: "TR.2 W", subgroupHeaderId: "temperature-tr2", labelHeaderId: "temperature-unit-2" },
-    { key: "TEMPRETURE__TR.2 O", label: "TR.2 O", subgroupHeaderId: "temperature-tr2", labelHeaderId: "temperature-unit-3" },
-    { key: "TEMPRETURE__TR.3 W", label: "TR.3 W", subgroupHeaderId: "temperature-tr3", labelHeaderId: "temperature-unit-4" },
-    { key: "TEMPRETURE__TR.3 O", label: "TR.3 O", subgroupHeaderId: "temperature-tr3", labelHeaderId: "temperature-unit-5" }
+    {
+      key: "TEMPRETURE__TR.1 W",
+      label: "TR.1 W",
+      subgroupHeaderId: "temperature-tr1",
+      labelHeaderId: "temperature-unit-0",
+    },
+    {
+      key: "TEMPRETURE__TR.1 O",
+      label: "TR.1 O",
+      subgroupHeaderId: "temperature-tr1",
+      labelHeaderId: "temperature-unit-1",
+    },
+    {
+      key: "TEMPRETURE__TR.2 W",
+      label: "TR.2 W",
+      subgroupHeaderId: "temperature-tr2",
+      labelHeaderId: "temperature-unit-2",
+    },
+    {
+      key: "TEMPRETURE__TR.2 O",
+      label: "TR.2 O",
+      subgroupHeaderId: "temperature-tr2",
+      labelHeaderId: "temperature-unit-3",
+    },
+    {
+      key: "TEMPRETURE__TR.3 W",
+      label: "TR.3 W",
+      subgroupHeaderId: "temperature-tr3",
+      labelHeaderId: "temperature-unit-4",
+    },
+    {
+      key: "TEMPRETURE__TR.3 O",
+      label: "TR.3 O",
+      subgroupHeaderId: "temperature-tr3",
+      labelHeaderId: "temperature-unit-5",
+    },
   ].map((field) => ({
     ...field,
     group: "TEMPRETURE",
     fullLabel: `TEMPRETURE - ${field.label}`,
-    groupHeaderId: "temperature-group"
-  }))
+    groupHeaderId: "temperature-group",
+  })),
 ];
 
-const SF6_COLUMNS = ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "Bas.c", "M.Tr1", "M.Tr2", "M.Tr3"];
+const SF6_COLUMNS = [
+  "L1",
+  "L2",
+  "L3",
+  "L4",
+  "L5",
+  "L6",
+  "L7",
+  "L8",
+  "Bas.c",
+  "M.Tr1",
+  "M.Tr2",
+  "M.Tr3",
+];
 const STORAGE_PREFIX = "electricity-log-sheet";
 const HEADER_STORAGE_KEY = `${STORAGE_PREFIX}-header-overrides`;
 
@@ -109,7 +194,7 @@ const state = {
   entries: {},
   skippedFields: [],
   headerOverrides: {},
-  editingHeaderId: null
+  editingHeaderId: null,
 };
 
 const setupDialog = document.getElementById("setupDialog");
@@ -132,6 +217,8 @@ const closeCameraButton = document.getElementById("closeCameraButton");
 const captureCameraButton = document.getElementById("captureCameraButton");
 const retakeCameraButton = document.getElementById("retakeCameraButton");
 const saveFieldButton = document.getElementById("saveFieldButton");
+const exportExcelButton = document.getElementById("exportExcelButton");
+const shareSheetButton = document.getElementById("shareSheetButton");
 const fieldNameInput = document.getElementById("fieldName");
 const fieldValueInput = document.getElementById("fieldValue");
 const voiceButton = document.getElementById("voiceButton");
@@ -150,14 +237,17 @@ const dateYear = document.getElementById("dateYear");
 const skipFieldList = document.getElementById("skipFieldList");
 const headerTextInput = document.getElementById("headerTextInput");
 const headerSubTextInput = document.getElementById("headerSubTextInput");
-const headerHorizontalButton = document.getElementById("headerHorizontalButton");
+const headerHorizontalButton = document.getElementById(
+  "headerHorizontalButton",
+);
 const headerVerticalButton = document.getElementById("headerVerticalButton");
 const cameraDialog = document.getElementById("cameraDialog");
 const cameraVideo = document.getElementById("cameraVideo");
 const cameraCanvas = document.getElementById("cameraCanvas");
 const cameraSnapshot = document.getElementById("cameraSnapshot");
 const cameraStatus = document.getElementById("cameraStatus");
-const SpeechRecognitionApi = window.SpeechRecognition || window.webkitSpeechRecognition;
+const SpeechRecognitionApi =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
 
 let recognition = null;
 let isListening = false;
@@ -215,7 +305,10 @@ function normalizeValueInput(value) {
 function setupVoiceRecognition() {
   if (!SpeechRecognitionApi) {
     voiceButton.disabled = true;
-    setVoiceStatus("Microphone input is not supported in this browser. Typing still works.", "error");
+    setVoiceStatus(
+      "Microphone input is not supported in this browser. Typing still works.",
+      "error",
+    );
     return;
   }
 
@@ -253,16 +346,25 @@ function setupVoiceRecognition() {
     setListeningState(false);
 
     if (event.error === "not-allowed") {
-      setVoiceStatus("Microphone permission was blocked. Allow microphone access and try again.", "error");
+      setVoiceStatus(
+        "Microphone permission was blocked. Allow microphone access and try again.",
+        "error",
+      );
       return;
     }
 
     if (event.error === "no-speech") {
-      setVoiceStatus("No speech was heard. Try again and speak a little closer to the microphone.", "error");
+      setVoiceStatus(
+        "No speech was heard. Try again and speak a little closer to the microphone.",
+        "error",
+      );
       return;
     }
 
-    setVoiceStatus(`Voice input error: ${event.error}. You can still type manually.`, "error");
+    setVoiceStatus(
+      `Voice input error: ${event.error}. You can still type manually.`,
+      "error",
+    );
   });
 }
 
@@ -279,7 +381,10 @@ function startVoiceCapture() {
         try {
           recognition.start();
         } catch {
-          setVoiceStatus("Microphone is busy. Wait a moment and try again.", "error");
+          setVoiceStatus(
+            "Microphone is busy. Wait a moment and try again.",
+            "error",
+          );
         }
       }
     }, 150);
@@ -298,8 +403,8 @@ function createEmptyEntries() {
   return Object.fromEntries(
     HOURS.map((hour) => [
       hour,
-      Object.fromEntries(FLAT_FIELDS.map((field) => [field.key, ""]))
-    ])
+      Object.fromEntries(FLAT_FIELDS.map((field) => [field.key, ""])),
+    ]),
   );
 }
 
@@ -326,7 +431,10 @@ function saveEntries() {
     return;
   }
 
-  localStorage.setItem(getStorageKey(state.date), JSON.stringify(state.entries));
+  localStorage.setItem(
+    getStorageKey(state.date),
+    JSON.stringify(state.entries),
+  );
   saveStatus.textContent = "Saved";
 }
 
@@ -343,7 +451,7 @@ function loadEntries(date) {
     for (const hour of HOURS) {
       emptyEntries[hour] = {
         ...emptyEntries[hour],
-        ...(parsed[hour] || {})
+        ...(parsed[hour] || {}),
       };
     }
     return emptyEntries;
@@ -371,7 +479,10 @@ function saveSkippedFields() {
     return;
   }
 
-  localStorage.setItem(getSkipStorageKey(state.date), JSON.stringify(state.skippedFields));
+  localStorage.setItem(
+    getSkipStorageKey(state.date),
+    JSON.stringify(state.skippedFields),
+  );
 }
 
 function loadHeaderOverrides() {
@@ -389,12 +500,112 @@ function loadHeaderOverrides() {
 }
 
 function saveHeaderOverrides() {
-  localStorage.setItem(HEADER_STORAGE_KEY, JSON.stringify(state.headerOverrides));
+  localStorage.setItem(
+    HEADER_STORAGE_KEY,
+    JSON.stringify(state.headerOverrides),
+  );
+}
+
+function buildExportFileName() {
+  return `daily-operation-log-${state.date || "sheet"}.xls`;
+}
+
+function buildExcelHtml() {
+  const headerHtml = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-weight:700;font-size:18px;">Date: ${state.date || ""}</div>
+      <div style="font-weight:700;font-size:22px;">DAILY OPERATION LOG SHEET</div>
+    </div>
+  `;
+
+  return `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office"
+          xmlns:x="urn:schemas-microsoft-com:office:excel"
+          xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, Helvetica, sans-serif; }
+          table { border-collapse: collapse; }
+          th, td { border: 1px solid #444; text-align: center; }
+        </style>
+      </head>
+      <body>
+        ${headerHtml}
+        ${logTable.outerHTML}
+        <br>
+        ${sf6Table.outerHTML}
+      </body>
+    </html>
+  `;
+}
+
+function createExcelFile() {
+  const html = buildExcelHtml();
+  const blob = new Blob([html], {
+    type: "application/vnd.ms-excel",
+  });
+
+  return new File([blob], buildExportFileName(), {
+    type: "application/vnd.ms-excel",
+  });
+}
+
+function downloadExcelFile() {
+  const file = createExcelFile();
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = file.name;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+async function shareSheetFile() {
+  if (!state.date) {
+    saveStatus.textContent = "Choose a date first";
+    return;
+  }
+
+  const file = createExcelFile();
+
+  if (!navigator.share) {
+    downloadExcelFile();
+    saveStatus.textContent = "Share not supported, downloaded instead";
+    return;
+  }
+
+  try {
+    const shareData = {
+      title: "Daily Operation Log Sheet",
+      text: `Daily sheet for ${state.date}`,
+      files: [file],
+    };
+
+    if (navigator.canShare && !navigator.canShare(shareData)) {
+      downloadExcelFile();
+      saveStatus.textContent = "File share not supported, downloaded instead";
+      return;
+    }
+
+    await navigator.share(shareData);
+    saveStatus.textContent = "Sheet shared";
+  } catch (error) {
+    if (error && error.name === "AbortError") {
+      return;
+    }
+
+    downloadExcelFile();
+    saveStatus.textContent = "Share failed, downloaded instead";
+  }
 }
 
 function setHeaderOrientationSelection(orientation) {
   selectedHeaderOrientation = orientation;
-  headerHorizontalButton.classList.toggle("active", orientation === "horizontal");
+  headerHorizontalButton.classList.toggle(
+    "active",
+    orientation === "horizontal",
+  );
   headerVerticalButton.classList.toggle("active", orientation === "vertical");
 }
 
@@ -409,15 +620,16 @@ async function openCamera() {
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({
       video: {
-        facingMode: "environment"
+        facingMode: "environment",
       },
-      audio: false
+      audio: false,
     });
 
     cameraVideo.srcObject = cameraStream;
     cameraVideo.hidden = false;
     cameraSnapshot.hidden = true;
-    cameraStatus.textContent = "Camera opened. Capture a photo of the meter number.";
+    cameraStatus.textContent =
+      "Camera opened. Capture a photo of the meter number.";
     cameraStatus.classList.remove("error");
     cameraDialog.showModal();
   } catch {
@@ -447,7 +659,8 @@ function captureCameraFrame() {
   const width = cameraVideo.videoWidth;
   const height = cameraVideo.videoHeight;
   if (!width || !height) {
-    cameraStatus.textContent = "Camera is still loading. Try again in a moment.";
+    cameraStatus.textContent =
+      "Camera is still loading. Try again in a moment.";
     cameraStatus.classList.add("error");
     return;
   }
@@ -460,7 +673,8 @@ function captureCameraFrame() {
   cameraSnapshot.src = cameraCanvas.toDataURL("image/png");
   cameraSnapshot.hidden = false;
   cameraVideo.hidden = true;
-  cameraStatus.textContent = "Photo captured. OCR is not installed yet, so this is camera-only for now.";
+  cameraStatus.textContent =
+    "Photo captured. OCR is not installed yet, so this is camera-only for now.";
   cameraStatus.classList.remove("error");
 }
 
@@ -503,26 +717,36 @@ function createCell(tag, className, text = "", rowSpan = 1, colSpan = 1) {
   return cell;
 }
 
-function getHeaderOverride(headerId, fallbackText, fallbackOrientation = "horizontal") {
+function getHeaderOverride(
+  headerId,
+  fallbackText,
+  fallbackOrientation = "horizontal",
+) {
   const override = state.headerOverrides[headerId];
   if (!override) {
     return {
       text: fallbackText,
       subText: "",
-      orientation: fallbackOrientation
+      orientation: fallbackOrientation,
     };
   }
 
   return {
     text: override.text || fallbackText,
     subText: override.subText || "",
-    orientation: override.orientation || fallbackOrientation
+    orientation: override.orientation || fallbackOrientation,
   };
 }
 
-function getHeaderDisplayText(headerId, fallbackText, fallbackOrientation = "horizontal") {
+function getHeaderDisplayText(
+  headerId,
+  fallbackText,
+  fallbackOrientation = "horizontal",
+) {
   const config = getHeaderOverride(headerId, fallbackText, fallbackOrientation);
-  return config.subText ? `${config.text} ${config.subText}`.trim() : config.text;
+  return config.subText
+    ? `${config.text} ${config.subText}`.trim()
+    : config.text;
 }
 
 function getFieldDisplayLabel(field) {
@@ -601,14 +825,29 @@ function appendHeaderContent(cell, text, subText, orientation, large = false) {
   }
 }
 
-function createEditableHeaderCell(tag, className, headerId, text, rowSpan = 1, colSpan = 1, defaultOrientation = "horizontal", large = false) {
+function createEditableHeaderCell(
+  tag,
+  className,
+  headerId,
+  text,
+  rowSpan = 1,
+  colSpan = 1,
+  defaultOrientation = "horizontal",
+  large = false,
+) {
   const cell = createCell(tag, className, "", rowSpan, colSpan);
   const config = getHeaderOverride(headerId, text, defaultOrientation);
   cell.classList.add("editable-header");
   cell.dataset.headerId = headerId;
   cell.dataset.defaultText = text;
   cell.dataset.defaultOrientation = defaultOrientation;
-  appendHeaderContent(cell, config.text, config.subText, config.orientation, large);
+  appendHeaderContent(
+    cell,
+    config.text,
+    config.subText,
+    config.orientation,
+    large,
+  );
   return cell;
 }
 
@@ -618,39 +857,154 @@ function renderMainTable() {
   const row2 = document.createElement("tr");
   const row3 = document.createElement("tr");
 
-  row1.append(createEditableHeaderCell("th", "time-head group", "time", "Time", 3, 1, "vertical", true));
+  row1.append(
+    createEditableHeaderCell(
+      "th",
+      "time-head group",
+      "time",
+      "Time",
+      3,
+      1,
+      "vertical",
+      true,
+    ),
+  );
 
   L_GROUPS.forEach((group) => {
-    row1.append(createEditableHeaderCell("th", "group", `group-${group.group}`, group.group, 2, group.fields.length));
+    row1.append(
+      createEditableHeaderCell(
+        "th",
+        "group",
+        `group-${group.group}`,
+        group.group,
+        2,
+        group.fields.length,
+      ),
+    );
     group.fields.forEach((field, fieldIndex) => {
-      row3.append(createEditableHeaderCell("th", "unit-row l-cell", `l-${group.group}-${fieldIndex}`, field, 1, 1, "vertical"));
+      row3.append(
+        createEditableHeaderCell(
+          "th",
+          "unit-row l-cell",
+          `l-${group.group}-${fieldIndex}`,
+          field,
+          1,
+          1,
+          "vertical",
+        ),
+      );
     });
   });
 
   MT_GROUPS.forEach((group, groupIndex) => {
-    row1.append(createEditableHeaderCell("th", "group mt-group", `group-${group.group}`, group.group, 1, group.fields.length));
+    row1.append(
+      createEditableHeaderCell(
+        "th",
+        "group mt-group",
+        `group-${group.group}`,
+        group.group,
+        1,
+        group.fields.length,
+      ),
+    );
     group.fields.forEach((field, fieldIndex) => {
-      row2.append(createEditableHeaderCell("th", "mt-cell", `mt-label-${groupIndex}-${fieldIndex}`, field.label, 1, 1, "vertical"));
-      row3.append(createEditableHeaderCell("th", "unit-row mt-cell", `mt-unit-${groupIndex}-${fieldIndex}`, field.unit || "", 1, 1, "vertical"));
+      row2.append(
+        createEditableHeaderCell(
+          "th",
+          "mt-cell",
+          `mt-label-${groupIndex}-${fieldIndex}`,
+          field.label,
+          1,
+          1,
+          "vertical",
+        ),
+      );
+      row3.append(
+        createEditableHeaderCell(
+          "th",
+          "unit-row mt-cell",
+          `mt-unit-${groupIndex}-${fieldIndex}`,
+          field.unit || "",
+          1,
+          1,
+          "vertical",
+        ),
+      );
     });
   });
 
-  row1.append(createEditableHeaderCell("th", "group", "feeders-33", "FEEDERS 33 KV", 1, FEEDERS_33.length));
+  row1.append(
+    createEditableHeaderCell(
+      "th",
+      "group",
+      "feeders-33",
+      "FEEDERS 33 KV",
+      1,
+      FEEDERS_33.length,
+    ),
+  );
   FEEDERS_33.forEach((field, fieldIndex) => {
-    row2.append(createEditableHeaderCell("th", "feeder-cell", `feed33-${fieldIndex}`, field, 2));
+    row2.append(
+      createEditableHeaderCell(
+        "th",
+        "feeder-cell",
+        `feed33-${fieldIndex}`,
+        field,
+        2,
+      ),
+    );
   });
 
-  row1.append(createEditableHeaderCell("th", "group", "feeders-11", "FEEDERS 11 KV", 1, FEEDERS_11.length));
+  row1.append(
+    createEditableHeaderCell(
+      "th",
+      "group",
+      "feeders-11",
+      "FEEDERS 11 KV",
+      1,
+      FEEDERS_11.length,
+    ),
+  );
   FEEDERS_11.forEach((field, fieldIndex) => {
-    row2.append(createEditableHeaderCell("th", "feeder-cell", `feed11-${fieldIndex}`, field, 2));
+    row2.append(
+      createEditableHeaderCell(
+        "th",
+        "feeder-cell",
+        `feed11-${fieldIndex}`,
+        field,
+        2,
+      ),
+    );
   });
 
-  row1.append(createEditableHeaderCell("th", "group", "temperature-group", "TEMPRETURE", 1, 6));
-  row2.append(createEditableHeaderCell("th", "subgroup", "temperature-tr1", "TR.1", 1, 2));
-  row2.append(createEditableHeaderCell("th", "subgroup", "temperature-tr2", "TR.2", 1, 2));
-  row2.append(createEditableHeaderCell("th", "subgroup", "temperature-tr3", "TR.3", 1, 2));
+  row1.append(
+    createEditableHeaderCell(
+      "th",
+      "group",
+      "temperature-group",
+      "TEMPRETURE",
+      1,
+      6,
+    ),
+  );
+  row2.append(
+    createEditableHeaderCell("th", "subgroup", "temperature-tr1", "TR.1", 1, 2),
+  );
+  row2.append(
+    createEditableHeaderCell("th", "subgroup", "temperature-tr2", "TR.2", 1, 2),
+  );
+  row2.append(
+    createEditableHeaderCell("th", "subgroup", "temperature-tr3", "TR.3", 1, 2),
+  );
   ["W", "O", "W", "O", "W", "O"].forEach((field, fieldIndex) => {
-    row3.append(createEditableHeaderCell("th", "unit-row temp-cell", `temperature-unit-${fieldIndex}`, field));
+    row3.append(
+      createEditableHeaderCell(
+        "th",
+        "unit-row temp-cell",
+        `temperature-unit-${fieldIndex}`,
+        field,
+      ),
+    );
   });
 
   thead.append(row1, row2, row3);
@@ -690,7 +1044,10 @@ function renderMainTable() {
         cell.classList.add("skipped-cell");
       }
 
-      if (hourIndex === state.activeHourIndex && fieldIndex === state.activeFieldIndex) {
+      if (
+        hourIndex === state.activeHourIndex &&
+        fieldIndex === state.activeFieldIndex
+      ) {
         cell.classList.add("active-cell");
       }
 
@@ -709,7 +1066,9 @@ function renderSf6Table() {
   row1.append(createEditableHeaderCell("th", "sf6-title", "sf6-title", "Sf6"));
   SF6_COLUMNS.forEach((column, index) => {
     const className = index >= 8 ? "sf6-small" : "sf6-head";
-    row1.append(createEditableHeaderCell("th", className, `sf6-col-${index}`, column));
+    row1.append(
+      createEditableHeaderCell("th", className, `sf6-col-${index}`, column),
+    );
   });
   row1.append(createCell("td", "sf6-blank", "", 4, 30));
 
@@ -764,10 +1123,12 @@ function updateEntryPanel() {
   const currentValue = state.entries[currentHour][currentField.key] || "";
   const completion = getHourCompletion(currentHour);
 
-  sheetDateLabel.textContent = new Date(`${state.date}T00:00:00`).toLocaleDateString(undefined, {
+  sheetDateLabel.textContent = new Date(
+    `${state.date}T00:00:00`,
+  ).toLocaleDateString(undefined, {
     year: "numeric",
     month: "long",
-    day: "numeric"
+    day: "numeric",
   });
   activeHourLabel.textContent = currentHour;
   fieldNameInput.value = getFieldDisplayLabel(currentField);
@@ -790,7 +1151,10 @@ function updateEntryPanel() {
 }
 
 function setActiveField(fieldIndex) {
-  const boundedIndex = Math.max(0, Math.min(fieldIndex, FLAT_FIELDS.length - 1));
+  const boundedIndex = Math.max(
+    0,
+    Math.min(fieldIndex, FLAT_FIELDS.length - 1),
+  );
   state.activeFieldIndex = boundedIndex;
   refreshUi();
 }
@@ -828,7 +1192,11 @@ function moveField(step) {
     return;
   }
 
-  while (nextIndex >= 0 && nextIndex < FLAT_FIELDS.length && isSkippedField(FLAT_FIELDS[nextIndex].key)) {
+  while (
+    nextIndex >= 0 &&
+    nextIndex < FLAT_FIELDS.length &&
+    isSkippedField(FLAT_FIELDS[nextIndex].key)
+  ) {
     nextIndex += step;
   }
 
@@ -933,6 +1301,20 @@ manageSkipsButton.addEventListener("click", () => {
   skipDialog.showModal();
 });
 
+exportExcelButton.addEventListener("click", () => {
+  if (!state.date) {
+    saveStatus.textContent = "Choose a date first";
+    return;
+  }
+
+  downloadExcelFile();
+  saveStatus.textContent = "Excel exported";
+});
+
+shareSheetButton.addEventListener("click", () => {
+  shareSheetFile();
+});
+
 cameraButton.addEventListener("click", () => {
   openCamera();
 });
@@ -970,7 +1352,7 @@ cancelSkipButton.addEventListener("click", () => {
 skipForm.addEventListener("submit", (event) => {
   event.preventDefault();
   state.skippedFields = Array.from(
-    skipFieldList.querySelectorAll('input[name="skippedFields"]:checked')
+    skipFieldList.querySelectorAll('input[name="skippedFields"]:checked'),
   ).map((input) => input.value);
   saveSkippedFields();
   setActiveHour(state.activeHourIndex);
@@ -994,7 +1376,7 @@ fieldValueInput.addEventListener("keydown", (event) => {
     "ArrowDown",
     "Home",
     "End",
-    "Enter"
+    "Enter",
   ];
 
   if (allowedKeys.includes(event.key) || event.ctrlKey || event.metaKey) {
@@ -1019,7 +1401,7 @@ logTable.addEventListener("click", (event) => {
     openHeaderEditor(
       headerCell.dataset.headerId,
       headerCell.dataset.defaultText || "",
-      headerCell.dataset.defaultOrientation || "horizontal"
+      headerCell.dataset.defaultOrientation || "horizontal",
     );
     return;
   }
@@ -1046,7 +1428,7 @@ sf6Table.addEventListener("click", (event) => {
   openHeaderEditor(
     headerCell.dataset.headerId,
     headerCell.dataset.defaultText || "",
-    headerCell.dataset.defaultOrientation || "horizontal"
+    headerCell.dataset.defaultOrientation || "horizontal",
   );
 });
 
@@ -1095,7 +1477,7 @@ headerForm.addEventListener("submit", (event) => {
   state.headerOverrides[state.editingHeaderId] = {
     text: headerTextInput.value.trim(),
     subText: headerSubTextInput.value.trim(),
-    orientation: selectedHeaderOrientation
+    orientation: selectedHeaderOrientation,
   };
   saveHeaderOverrides();
   renderTable();
