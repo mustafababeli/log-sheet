@@ -1007,9 +1007,18 @@ function isFeederField(groupName) {
 }
 
 function getHourCompletion(hour) {
-  const values = Object.values(state.entries[hour] || {});
-  const filled = values.filter((value) => String(value).trim() !== "").length;
-  return { filled, total: values.length };
+  const relevantFields = FLAT_FIELDS.filter(
+    (field) => !isSkippedField(field.key),
+  );
+  const filled = relevantFields.filter((field) => {
+    const value = state.entries[hour]?.[field.key] || "";
+    return String(value).trim() !== "";
+  }).length;
+
+  return {
+    filled,
+    total: relevantFields.length,
+  };
 }
 
 function createCell(tag, className, text = "", rowSpan = 1, colSpan = 1) {
@@ -1449,7 +1458,11 @@ function updateEntryPanel() {
   fieldValueInput.disabled = isSkippedField(currentField.key);
   saveFieldButton.disabled = isSkippedField(currentField.key);
   progressLabel.textContent = `Field ${state.activeFieldIndex + 1} of ${FLAT_FIELDS.length}`;
-  completionLabel.textContent = `${Math.round((completion.filled / completion.total) * 100)}% complete`;
+  const completionPercent =
+    completion.total === 0
+      ? 100
+      : Math.round((completion.filled / completion.total) * 100);
+  completionLabel.textContent = `${completionPercent}% complete`;
   fieldValueInput.focus();
   fieldValueInput.select();
   updateDateReplica();
