@@ -271,6 +271,7 @@ const captureCameraButton = document.getElementById("captureCameraButton");
 const retakeCameraButton = document.getElementById("retakeCameraButton");
 const saveFieldButton = document.getElementById("saveFieldButton");
 const exportExcelButton = document.getElementById("exportExcelButton");
+const exportImageButton = document.getElementById("exportImageButton");
 const shareSheetButton = document.getElementById("shareSheetButton");
 const fieldNameInput = document.getElementById("fieldName");
 const fieldValueInput = document.getElementById("fieldValue");
@@ -374,6 +375,8 @@ function applyLanguage() {
   saveFieldButton.textContent = t("saveAndNext");
   manageSkipsButton.textContent = t("skipSpots");
   exportExcelButton.textContent = t("exportExcel");
+  exportImageButton.textContent =
+    state.language === "ar" ? "تصدير صورة" : "Export Photo";
   shareSheetButton.textContent = t("shareSheet");
   settingsTitle.textContent = t("settingsTitle");
   languageLabel.textContent = t("language");
@@ -709,6 +712,165 @@ function downloadExcelFile() {
   link.download = file.name;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+function drawCenteredText(context, text, rect, font, color) {
+  if (!text) {
+    return;
+  }
+
+  context.save();
+  context.font = font;
+  context.fillStyle = color;
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText(text, rect.x + rect.width / 2, rect.y + rect.height / 2);
+  context.restore();
+}
+
+function drawVerticalText(context, text, rect, font, color) {
+  if (!text) {
+    return;
+  }
+
+  context.save();
+  context.font = font;
+  context.fillStyle = color;
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.translate(rect.x + rect.width / 2, rect.y + rect.height / 2);
+  context.rotate(-Math.PI / 2);
+  context.fillText(text, 0, 0);
+  context.restore();
+}
+
+function drawCellContent(context, cell, paperRect, scale) {
+  const rect = cell.getBoundingClientRect();
+  const x = (rect.left - paperRect.left) * scale;
+  const y = (rect.top - paperRect.top) * scale;
+  const width = rect.width * scale;
+  const height = rect.height * scale;
+  const computed = window.getComputedStyle(cell);
+
+  context.fillStyle = computed.backgroundColor || "#ffffff";
+  context.fillRect(x, y, width, height);
+  context.strokeStyle = computed.borderTopColor || "#444444";
+  context.lineWidth = 1;
+  context.strokeRect(x, y, width, height);
+
+  const verticalWords = Array.from(cell.querySelectorAll(".vertical-word"));
+  if (verticalWords.length > 0) {
+    const sectionHeight = height / verticalWords.length;
+    verticalWords.forEach((node, index) => {
+      drawVerticalText(
+        context,
+        node.textContent.trim(),
+        {
+          x,
+          y: y + index * sectionHeight,
+          width,
+          height: sectionHeight,
+        },
+        `${Math.max(10, Math.round(11 * scale))}px Arial`,
+        computed.color || "#111111",
+      );
+    });
+    return;
+  }
+
+  const headerText = cell.querySelector(".header-text");
+  if (headerText) {
+    const mainText =
+      headerText.firstElementChild?.textContent?.trim() ||
+      headerText.textContent.trim();
+    const subText =
+      headerText.querySelector(".header-subtext")?.textContent?.trim() || "";
+
+    if (subText) {
+      drawCenteredText(
+        context,
+        mainText,
+        { x, y, width, height: height * 0.52 },
+        `700 ${Math.max(10, Math.round(11 * scale))}px Arial`,
+        computed.color || "#111111",
+      );
+
+      drawCenteredText(
+        context,
+        subText,
+        { x, y: y + height * 0.48, width, height: height * 0.42 },
+        `700 ${Math.max(9, Math.round(9 * scale))}px Arial`,
+        computed.color || "#111111",
+      );
+      return;
+    }
+  }
+
+  drawCenteredText(
+    context,
+    cell.textContent.trim(),
+    { x, y, width, height },
+    `${computed.fontWeight || "400"} ${Math.max(10, Math.round(parseFloat(computed.fontSize) * scale))}px Arial`,
+    computed.color || "#111111",
+  );
+}
+
+function drawHeaderText(context, element, paperRect, scale) {
+  const text = element.textContent.trim();
+  if (!text) {
+    return;
+  }
+
+  const rect = element.getBoundingClientRect();
+  const computed = window.getComputedStyle(element);
+
+  drawCenteredText(
+    context,
+    text,
+    {
+      x: (rect.left - paperRect.left) * scale,
+      y: (rect.top - paperRect.top) * scale,
+      width: rect.width * scale,
+      height: rect.height * scale,
+    },
+    `${computed.fontWeight || "700"} ${Math.max(10, Math.round(parseFloat(computed.fontSize) * scale))}px Arial`,
+    computed.color || "#111111",
+  );
+}
+
+async function downloadSheetAsImage() {
+  const target = document.querySelector(".sheet-paper");
+  if (!target) {
+    return;
+  }
+
+  const paperRect = target.getBoundingClientRect();
+  const scale = window.devicePixelRatio > 1 ? 2 : 1;
+  const width = Math.ceil(paperRect.width * scale);
+  const height = Math.ceil(paperRect.height * scale);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext("2d");
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, width, height);
+
+  target
+    .querySelectorAll(".paper-header .date-line span, .paper-header h1")
+    .forEach((element) => {
+      drawHeaderText(context, element, paperRect, scale);
+    });
+
+  target.querySelectorAll("th, td").forEach((cell) => {
+    drawCellContent(context, cell, paperRect, scale);
+  });
+
+  const pngUrl = canvas.toDataURL("image/png");
+  const link = document.createElement("a");
+  link.href = pngUrl;
+  link.download = `daily-operation-log-${state.date || "sheet"}.png`;
+  link.click();
 }
 
 async function shareSheetFile() {
@@ -1457,6 +1619,22 @@ exportExcelButton.addEventListener("click", () => {
 
   downloadExcelFile();
   saveStatus.textContent = "Excel exported";
+});
+
+exportImageButton.addEventListener("click", async () => {
+  if (!state.date) {
+    saveStatus.textContent = "Choose a date first";
+    return;
+  }
+
+  try {
+    await downloadSheetAsImage();
+    saveStatus.textContent =
+      state.language === "ar" ? "تم تصدير الصورة" : "Photo exported";
+  } catch {
+    saveStatus.textContent =
+      state.language === "ar" ? "فشل تصدير الصورة" : "Photo export failed";
+  }
 });
 
 shareSheetButton.addEventListener("click", () => {
