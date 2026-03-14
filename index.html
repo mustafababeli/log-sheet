@@ -8,18 +8,26 @@
   </head>
   <body>
     <div class="app-shell">
+      <button
+        id="settingsButton"
+        class="settings-icon-button"
+        type="button"
+        aria-label="Settings"
+        title="Settings"
+      ></button>
+
       <section class="control-strip">
         <div class="control-row info-row">
           <div class="control-group">
-            <span class="strip-label">Sheet Date</span>
+            <span id="sheetDateText" class="strip-label">Sheet Date</span>
             <strong id="sheetDateLabel">No date selected</strong>
           </div>
           <div class="control-group">
-            <span class="strip-label">Active Hour</span>
+            <span id="activeHourText" class="strip-label">Active Hour</span>
             <strong id="activeHourLabel">-</strong>
           </div>
           <div class="control-group stretch">
-            <span class="strip-label">Current Field</span>
+            <span id="currentFieldText" class="strip-label">Current Field</span>
             <input id="fieldName" type="text" readonly />
           </div>
           <button id="openSetupButton" class="ghost-button" type="button">
@@ -31,18 +39,20 @@
         </div>
 
         <div class="control-row action-row">
-          <button
-            id="voiceButton"
-            class="ghost-button voice-button"
-            type="button"
-          >
-            Start Talking
-          </button>
-          <button id="cameraButton" class="ghost-button" type="button">
-            Open Camera
-          </button>
+          <div class="input-types-div">
+            <button
+              id="voiceButton"
+              class="ghost-button voice-button"
+              type="button"
+            >
+              Start Talking
+            </button>
+            <button id="cameraButton" class="ghost-button" type="button">
+              Open Camera
+            </button>
+          </div>
           <div class="control-group value-group">
-            <span class="strip-label">Value</span>
+            <span id="valueText" class="strip-label">Value</span>
             <input
               id="fieldValue"
               type="text"
@@ -225,6 +235,25 @@
           </button>
         </div>
       </div>
+    </dialog>
+
+    <dialog id="settingsDialog">
+      <form id="settingsForm" class="setup-form" method="dialog">
+        <h2 id="settingsTitle">Settings</h2>
+        <label id="languageLabel" for="languageSelect">Language</label>
+        <select id="languageSelect" name="languageSelect">
+          <option value="en">English</option>
+          <option value="ar">العربية</option>
+        </select>
+        <div class="setup-actions">
+          <button id="closeSettingsButton" class="ghost-button" type="button">
+            Close
+          </button>
+          <button id="saveSettingsButton" class="primary-button" type="submit">
+            Save Settings
+          </button>
+        </div>
+      </form>
     </dialog>
 
     <script src="./app.js"></script>

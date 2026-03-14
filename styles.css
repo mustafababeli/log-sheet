@@ -17,9 +17,7 @@ body {
   margin: 0;
   font-family: Arial, Helvetica, sans-serif;
   color: var(--ink);
-  background:
-    linear-gradient(180deg, rgba(86, 69, 34, 0.18), transparent 180px),
-    linear-gradient(180deg, #d6ccb6 0%, #c8bda3 100%);
+  background: #fff;
 }
 
 button,
@@ -30,7 +28,7 @@ select {
 
 .app-shell {
   min-height: 100vh;
-  padding: 18px;
+  padding: 0;
   position: relative;
 }
 
@@ -60,10 +58,10 @@ select {
   align-items: stretch;
   gap: 14px;
   flex-wrap: wrap;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(68, 68, 68, 0.22);
-  border-radius: 12px;
-  padding: 16px 18px;
+  background: #fff;
+  border: 0;
+  border-radius: 0;
+  padding: 16px;
 }
 
 .control-strip {
@@ -195,15 +193,15 @@ select {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
-  margin-top: 14px;
+  margin: 14px 16px 16px;
 }
 
 .sheet-paper {
   width: max-content;
   min-width: 100%;
   background: var(--paper);
-  border: 2px solid var(--line);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12);
+  border: 0;
+  box-shadow: none;
 }
 
 .paper-header {
@@ -487,10 +485,10 @@ table {
 
 dialog {
   border: 0;
-  border-radius: 18px;
+  border-radius: 8px;
   padding: 0;
   width: min(420px, calc(100vw - 24px));
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 #cameraDialog {
@@ -527,6 +525,11 @@ dialog::backdrop {
 
 html[dir="rtl"] body {
   direction: rtl;
+}
+
+html[dir="rtl"] .settings-icon-button {
+  right: auto;
+  left: 12px;
 }
 
 html[dir="rtl"] .sheet-stage,
@@ -595,7 +598,7 @@ html[dir="rtl"] .sf6-table {
   }
 
   .app-shell {
-    padding: 10px;
+    padding: 0;
   }
 
   .settings-icon-button {
@@ -605,11 +608,16 @@ html[dir="rtl"] .sf6-table {
     height: 42px;
   }
 
+  html[dir="rtl"] .settings-icon-button {
+    right: auto;
+    left: 10px;
+  }
+
   .control-strip,
   .status-strip {
     padding: 12px;
     gap: 10px;
-    border-radius: 10px;
+    border-radius: 0;
   }
 
   .control-row {
@@ -667,9 +675,44 @@ html[dir="rtl"] .sf6-table {
     align-self: stretch;
   }
 
+  .info-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .info-row .control-group,
+  .info-row .control-group.stretch {
+    grid-column: 1 / -1;
+  }
+
+  .action-row .input-types-div {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .action-row .input-types-div .ghost-button {
+    width: 100%;
+  }
+
   .info-row .ghost-button {
-    width: calc(50% - 5px);
-    align-self: end;
+    width: 100%;
+    align-self: stretch;
+  }
+
+  .info-row .ghost-button,
+  .action-row .input-types-div .ghost-button {
+    min-height: 52px;
+    padding: 0 10px;
+    white-space: nowrap;
+    font-size: 0.92rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .status-strip {
