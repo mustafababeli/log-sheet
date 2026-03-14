@@ -661,6 +661,18 @@ html[dir="rtl"] .sf6-table {
     font-size: 16px;
   }
 
+  .action-row .control-group.stretch {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .action-row .control-group.stretch input {
+    min-height: 38px;
+    padding: 8px 10px;
+    font-size: 0.95rem;
+  }
+
   .control-strip input,
   .setup-form input,
   .setup-form select {

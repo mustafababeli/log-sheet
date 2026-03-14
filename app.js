@@ -312,11 +312,16 @@ const closeSettingsButton = document.getElementById("closeSettingsButton");
 const saveSettingsButton = document.getElementById("saveSettingsButton");
 const SpeechRecognitionApi =
   window.SpeechRecognition || window.webkitSpeechRecognition;
+const currentFieldGroup = currentFieldText.closest(".control-group");
+const infoRow = currentFieldGroup.closest(".info-row");
+const actionRow = document.querySelector(".action-row");
+const valueGroup = document.querySelector(".value-group");
 
 let recognition = null;
 let isListening = false;
 let cameraStream = null;
 let selectedHeaderOrientation = "horizontal";
+let currentFieldInActionRow = false;
 
 function t(key) {
   return UI_TEXT[state.language]?.[key] || UI_TEXT.en[key] || key;
@@ -369,6 +374,21 @@ function applyLanguage() {
 
   if (!state.date) {
     sheetDateLabel.textContent = t("noDateSelected");
+  }
+}
+
+function syncMobileFieldLayout() {
+  const shouldMoveCurrentField = window.innerWidth <= 640;
+
+  if (shouldMoveCurrentField && !currentFieldInActionRow) {
+    actionRow.insertBefore(currentFieldGroup, valueGroup);
+    currentFieldInActionRow = true;
+    return;
+  }
+
+  if (!shouldMoveCurrentField && currentFieldInActionRow) {
+    infoRow.insertBefore(currentFieldGroup, openSetupButton);
+    currentFieldInActionRow = false;
   }
 }
 
@@ -1630,11 +1650,14 @@ settingsForm.addEventListener("submit", (event) => {
   settingsDialog.close();
 });
 
+window.addEventListener("resize", syncMobileFieldLayout);
+
 populateHourOptions();
 state.language = loadSettings().language;
 state.headerOverrides = loadHeaderOverrides();
 setupVoiceRecognition();
 applyLanguage();
+syncMobileFieldLayout();
 renderTable();
 const initialDate = getToday();
 sheetDateInput.value = initialDate;
