@@ -190,6 +190,29 @@ const SETTINGS_STORAGE_KEY = `${STORAGE_PREFIX}-settings`;
 const FACILITIES_STORAGE_KEY = `${STORAGE_PREFIX}-facilities`;
 const UI_TEXT = {
   en: {
+    homeTitle: "Logbook Hub",
+    facilities: "Facilities",
+    newFacility: "New Facility",
+    next: "Next",
+    addFacility: "Add Facility",
+    facilityName: "Facility Name",
+    saveFacility: "Save Facility",
+    addOperator: "Add Operator",
+    operatorName: "Operator Name",
+    saveOperator: "Save Operator",
+    operators: "Operators",
+    noFacilities: "No facilities yet. Add your first facility.",
+    noOperators: "No operators yet.",
+    edit: "Edit",
+    editFacility: "Edit Facility",
+    saveChanges: "Save Changes",
+    delete: "Delete",
+    deleteFacility: "Delete Facility",
+    backToFacilities: "Back To Facilities",
+    loginTitle: "Log In",
+    username: "Username",
+    password: "Password",
+    enter: "Enter",
     sheetDate: "Sheet Date",
     activeHour: "Active Hour",
     currentField: "Current Field",
@@ -214,6 +237,24 @@ const UI_TEXT = {
     ready: "Ready",
   },
   ar: {
+    homeTitle: "مركز السجل",
+    facilities: "المنشآت",
+    newFacility: "منشأة جديدة",
+    addFacility: "إضافة منشأة",
+    facilityName: "اسم المنشأة",
+    saveFacility: "حفظ المنشأة",
+    addOperator: "إضافة مشغل",
+    operatorName: "اسم المشغل",
+    saveOperator: "حفظ المشغل",
+    operators: "المشغلون",
+    noFacilities: "لا توجد منشآت بعد. أضف أول منشأة.",
+    noOperators: "لا يوجد مشغلون بعد.",
+    edit: "تعديل",
+    editFacility: "تعديل المنشأة",
+    saveChanges: "حفظ التغييرات",
+    delete: "حذف",
+    deleteFacility: "حذف المنشأة",
+    backToFacilities: "العودة إلى المنشآت",
     sheetDate: "تاريخ الورقة",
     activeHour: "الساعة الحالية",
     currentField: "الحقل الحالي",
@@ -252,11 +293,24 @@ const state = {
   selectedFacilityId: "",
   selectedOperatorId: "",
   editingFacilityId: "",
+  editingFacilityDialogId: "",
 };
 
 const homeScreen = document.getElementById("homeScreen");
+const loginScreen = document.getElementById("loginScreen");
 const appShell = document.getElementById("appShell");
+const homeTitle = document.getElementById("homeTitle");
+const facilitiesHeading = document.getElementById("facilitiesHeading");
+const homeLanguageButton = document.getElementById("homeLanguageButton");
 const facilityList = document.getElementById("facilityList");
+const homeNextButton = document.getElementById("homeNextButton");
+const loginTitle = document.getElementById("loginTitle");
+const loginForm = document.getElementById("loginForm");
+const loginUsernameText = document.getElementById("loginUsernameText");
+const loginPasswordText = document.getElementById("loginPasswordText");
+const loginUsernameInput = document.getElementById("loginUsernameInput");
+const loginPasswordInput = document.getElementById("loginPasswordInput");
+const enterFacilitiesButton = document.getElementById("enterFacilitiesButton");
 const openFacilityDialogButton = document.getElementById(
   "openFacilityDialogButton",
 );
@@ -268,6 +322,14 @@ const operatorDialog = document.getElementById("operatorDialog");
 const operatorForm = document.getElementById("operatorForm");
 const operatorNameInput = document.getElementById("operatorNameInput");
 const cancelOperatorButton = document.getElementById("cancelOperatorButton");
+const editFacilityDialog = document.getElementById("editFacilityDialog");
+const editFacilityForm = document.getElementById("editFacilityForm");
+const editFacilityNameInput = document.getElementById("editFacilityNameInput");
+const editOperatorList = document.getElementById("editOperatorList");
+const cancelEditFacilityButton = document.getElementById(
+  "cancelEditFacilityButton",
+);
+const deleteFacilityButton = document.getElementById("deleteFacilityButton");
 const setupDialog = document.getElementById("setupDialog");
 const skipDialog = document.getElementById("skipDialog");
 const headerDialog = document.getElementById("headerDialog");
@@ -283,6 +345,7 @@ const openSetupButton = document.getElementById("openSetupButton");
 const manageSkipsButton = document.getElementById("manageSkipsButton");
 const resetSheetButton = document.getElementById("resetSheetButton");
 const settingsButton = document.getElementById("settingsButton");
+const backToHomeButton = document.getElementById("backToHomeButton");
 const resetHeaderButton = document.getElementById("resetHeaderButton");
 const cameraButton = document.getElementById("cameraButton");
 const closeCameraButton = document.getElementById("closeCameraButton");
@@ -420,11 +483,13 @@ function createId(prefix) {
 
 function renderFacilities() {
   facilityList.innerHTML = "";
+  homeNextButton.disabled =
+    !state.selectedFacilityId || !state.selectedOperatorId;
 
   if (state.facilities.length === 0) {
     const empty = document.createElement("p");
     empty.className = "facility-empty";
-    empty.textContent = "No facilities yet. Add your first facility.";
+    empty.textContent = t("noFacilities");
     facilityList.append(empty);
     return;
   }
@@ -442,14 +507,24 @@ function renderFacilities() {
     const addOperatorButton = document.createElement("button");
     addOperatorButton.type = "button";
     addOperatorButton.className = "ghost-button";
-    addOperatorButton.textContent = "Add Operator";
+    addOperatorButton.textContent = t("addOperator");
     addOperatorButton.dataset.facilityId = facility.id;
 
-    header.append(title, addOperatorButton);
+    const editFacilityButton = document.createElement("button");
+    editFacilityButton.type = "button";
+    editFacilityButton.className = "ghost-button";
+    editFacilityButton.textContent = t("edit");
+    editFacilityButton.dataset.editFacilityId = facility.id;
+
+    const actionGroup = document.createElement("div");
+    actionGroup.className = "facility-card-actions";
+    actionGroup.append(addOperatorButton, editFacilityButton);
+
+    header.append(title, actionGroup);
 
     const operatorsTitle = document.createElement("p");
     operatorsTitle.className = "facility-subtitle";
-    operatorsTitle.textContent = "Operators";
+    operatorsTitle.textContent = t("operators");
 
     const operatorsList = document.createElement("div");
     operatorsList.className = "operator-list";
@@ -457,7 +532,7 @@ function renderFacilities() {
     if (facility.operators.length === 0) {
       const emptyOperators = document.createElement("p");
       emptyOperators.className = "operator-empty";
-      emptyOperators.textContent = "No operators yet.";
+      emptyOperators.textContent = t("noOperators");
       operatorsList.append(emptyOperators);
     } else {
       facility.operators.forEach((operator) => {
@@ -467,6 +542,12 @@ function renderFacilities() {
         operatorButton.textContent = operator.name;
         operatorButton.dataset.facilityId = facility.id;
         operatorButton.dataset.operatorId = operator.id;
+        if (
+          state.selectedFacilityId === facility.id &&
+          state.selectedOperatorId === operator.id
+        ) {
+          operatorButton.classList.add("selected");
+        }
         operatorsList.append(operatorButton);
       });
     }
@@ -476,19 +557,80 @@ function renderFacilities() {
   });
 }
 
+function openFacilityEditor(facilityId) {
+  const facility = state.facilities.find((item) => item.id === facilityId);
+  if (!facility) {
+    return;
+  }
+
+  state.editingFacilityDialogId = facilityId;
+  editFacilityNameInput.value = facility.name;
+  editOperatorList.innerHTML = "";
+
+  if (facility.operators.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "operator-empty";
+    empty.textContent = t("noOperators");
+    editOperatorList.append(empty);
+  } else {
+    facility.operators.forEach((operator) => {
+      const row = document.createElement("div");
+      row.className = "edit-operator-row";
+      row.dataset.operatorId = operator.id;
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = operator.name;
+      input.required = true;
+      input.dataset.operatorNameInput = "true";
+
+      const deleteButton = document.createElement("button");
+      deleteButton.type = "button";
+      deleteButton.className = "ghost-button danger-button";
+      deleteButton.textContent = t("delete");
+      deleteButton.dataset.deleteOperatorId = operator.id;
+
+      row.append(input, deleteButton);
+      editOperatorList.append(row);
+    });
+  }
+
+  editFacilityDialog.showModal();
+  window.setTimeout(() => {
+    editFacilityNameInput.focus();
+    editFacilityNameInput.select();
+  }, 0);
+}
+
 function showHomeScreen() {
   homeScreen.classList.remove("hidden");
+  loginScreen.classList.add("hidden");
+  appShell.classList.add("hidden");
+}
+
+function showLoginScreen() {
+  homeScreen.classList.add("hidden");
+  loginScreen.classList.remove("hidden");
   appShell.classList.add("hidden");
 }
 
 function showAppShell() {
   homeScreen.classList.add("hidden");
+  loginScreen.classList.add("hidden");
   appShell.classList.remove("hidden");
 }
 
 function selectOperator(facilityId, operatorId) {
   state.selectedFacilityId = facilityId;
   state.selectedOperatorId = operatorId;
+  renderFacilities();
+}
+
+function openSelectedOperatorSheet() {
+  if (!state.selectedFacilityId || !state.selectedOperatorId) {
+    return;
+  }
+
   showAppShell();
   const initialDate = getToday();
   sheetDateInput.value = initialDate;
@@ -508,6 +650,21 @@ function saveSettings() {
 function applyLanguage() {
   document.documentElement.lang = state.language === "ar" ? "ar" : "en";
   document.documentElement.dir = state.language === "ar" ? "rtl" : "ltr";
+  homeTitle.textContent = t("homeTitle");
+  facilitiesHeading.textContent = t("facilities");
+  openFacilityDialogButton.textContent = t("newFacility");
+  homeNextButton.textContent = state.language === "ar" ? "التالي" : t("next");
+  homeLanguageButton.textContent = state.language === "ar" ? "EN" : "ع";
+  homeLanguageButton.setAttribute("aria-label", t("language"));
+  homeLanguageButton.setAttribute("title", t("language"));
+  loginTitle.textContent =
+    state.language === "ar" ? "تسجيل الدخول" : t("loginTitle");
+  loginUsernameText.textContent =
+    state.language === "ar" ? "اسم المستخدم" : t("username");
+  loginPasswordText.textContent =
+    state.language === "ar" ? "كلمة المرور" : t("password");
+  enterFacilitiesButton.textContent =
+    state.language === "ar" ? "دخول" : t("enter");
   sheetDateText.textContent = t("sheetDate");
   activeHourText.textContent = t("activeHour");
   currentFieldText.textContent = t("currentField");
@@ -523,6 +680,7 @@ function applyLanguage() {
   exportImageButton.textContent =
     state.language === "ar" ? "تصدير صورة" : "Export Photo";
   shareSheetButton.textContent = t("shareSheet");
+  backToHomeButton.textContent = t("backToFacilities");
   settingsTitle.textContent = t("settingsTitle");
   languageLabel.textContent = t("language");
   closeSettingsButton.textContent = t("close");
@@ -531,6 +689,28 @@ function applyLanguage() {
   settingsResetSheetButton.textContent = t("resetSheet");
   settingsSkipSpotsButton.textContent = t("skipSpots");
   fieldValueInput.placeholder = t("valuePlaceholder");
+  facilityDialog.querySelector("h2").textContent = t("addFacility");
+  facilityDialog.querySelector('label[for="facilityNameInput"]').textContent =
+    t("facilityName");
+  facilityDialog.querySelector('.primary-button[type="submit"]').textContent =
+    t("saveFacility");
+  operatorDialog.querySelector("h2").textContent = t("addOperator");
+  operatorDialog.querySelector('label[for="operatorNameInput"]').textContent =
+    t("operatorName");
+  operatorDialog.querySelector('.primary-button[type="submit"]').textContent =
+    t("saveOperator");
+  editFacilityDialog.querySelector("h2").textContent = t("editFacility");
+  editFacilityDialog.querySelector(
+    'label[for="editFacilityNameInput"]',
+  ).textContent = t("facilityName");
+  editFacilityDialog.querySelector(
+    ".edit-operators-block .strip-label",
+  ).textContent = t("operators");
+  deleteFacilityButton.textContent = t("deleteFacility");
+  editFacilityDialog.querySelector(
+    '.primary-button[type="submit"]',
+  ).textContent = t("saveChanges");
+  renderFacilities();
 
   if (!state.date) {
     sheetDateLabel.textContent = t("noDateSelected");
@@ -949,6 +1129,35 @@ function drawCellContent(context, cell, paperRect, scale) {
       );
       return;
     }
+  }
+
+  const namesBox = cell.querySelector(".names-sheet-box");
+  if (namesBox) {
+    const nameItems = Array.from(namesBox.querySelectorAll(".sheet-name-item"));
+    const availableHeight = Math.max(height - 8 * scale, 0);
+    const rowHeight =
+      nameItems.length > 0
+        ? availableHeight / nameItems.length
+        : availableHeight;
+
+    nameItems.forEach((item, index) => {
+      const itemFontWeight = item.classList.contains("selected")
+        ? "700"
+        : "400";
+      drawCenteredText(
+        context,
+        item.textContent.trim(),
+        {
+          x,
+          y: y + index * rowHeight,
+          width,
+          height: rowHeight,
+        },
+        `${itemFontWeight} ${Math.max(10, Math.round(11 * scale))}px Arial`,
+        computed.color || "#111111",
+      );
+    });
+    return;
   }
 
   drawCenteredText(
@@ -1540,7 +1749,7 @@ function renderSf6Table() {
       createEditableHeaderCell("th", className, `sf6-col-${index}`, column),
     );
   });
-  row1.append(createCell("td", "sf6-blank", "", 4, 30));
+  row1.append(buildNamesSheetCell());
 
   const row2 = document.createElement("tr");
   row2.append(createEditableHeaderCell("th", "sf6-time", "sf6-time", "Time"));
@@ -1567,6 +1776,46 @@ function renderSf6Table() {
 function renderTable() {
   renderMainTable();
   renderSf6Table();
+}
+
+function buildNamesSheetCell() {
+  const cell = createCell("td", "names-sheet-cell", "", 4, 30);
+  const box = document.createElement("div");
+  box.className = "names-sheet-box";
+
+  const facility = state.facilities.find(
+    (item) => item.id === state.selectedFacilityId,
+  );
+  const names = facility
+    ? facility.operators
+        .map((operator) => ({
+          name: operator.name,
+          selected: operator.id === state.selectedOperatorId,
+        }))
+        .filter((operator) => operator.name)
+    : [];
+
+  if (names.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "sheet-name-item";
+    empty.textContent = "";
+    box.append(empty);
+    cell.append(box);
+    return cell;
+  }
+
+  names.forEach((operator) => {
+    const item = document.createElement("div");
+    item.className = "sheet-name-item";
+    if (operator.selected) {
+      item.classList.add("selected");
+    }
+    item.textContent = operator.name;
+    box.append(item);
+  });
+
+  cell.append(box);
+  return cell;
 }
 
 function updateDateReplica() {
@@ -1754,6 +2003,17 @@ openFacilityDialogButton.addEventListener("click", () => {
   }, 0);
 });
 
+homeLanguageButton.addEventListener("click", () => {
+  state.language = state.language === "ar" ? "en" : "ar";
+  saveSettings();
+  applyLanguage();
+  refreshUi();
+});
+
+homeNextButton.addEventListener("click", () => {
+  openSelectedOperatorSheet();
+});
+
 cancelFacilityButton.addEventListener("click", () => {
   facilityDialog.close();
 });
@@ -1779,6 +2039,37 @@ cancelOperatorButton.addEventListener("click", () => {
   operatorDialog.close();
 });
 
+cancelEditFacilityButton.addEventListener("click", () => {
+  editFacilityDialog.close();
+});
+
+deleteFacilityButton.addEventListener("click", () => {
+  const facility = state.facilities.find(
+    (item) => item.id === state.editingFacilityDialogId,
+  );
+  if (!facility) {
+    return;
+  }
+
+  const confirmed = window.confirm(
+    `Delete facility "${facility.name}" and all its operators?`,
+  );
+  if (!confirmed) {
+    return;
+  }
+
+  state.facilities = state.facilities.filter((item) => item.id !== facility.id);
+
+  if (state.selectedFacilityId === facility.id) {
+    state.selectedFacilityId = "";
+    state.selectedOperatorId = "";
+  }
+
+  saveFacilities();
+  renderFacilities();
+  editFacilityDialog.close();
+});
+
 operatorForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const name = operatorNameInput.value.trim();
@@ -1799,10 +2090,19 @@ operatorForm.addEventListener("submit", (event) => {
   });
   saveFacilities();
   renderFacilities();
+  renderSheetNames();
   operatorDialog.close();
 });
 
 facilityList.addEventListener("click", (event) => {
+  const editFacilityButton = event.target.closest(
+    "button[data-edit-facility-id]",
+  );
+  if (editFacilityButton) {
+    openFacilityEditor(editFacilityButton.dataset.editFacilityId || "");
+    return;
+  }
+
   const addOperatorButton = event.target.closest(
     "button[data-facility-id]:not([data-operator-id])",
   );
@@ -1825,6 +2125,64 @@ facilityList.addEventListener("click", (event) => {
       operatorButton.dataset.operatorId || "",
     );
   }
+});
+
+editOperatorList.addEventListener("click", (event) => {
+  const deleteButton = event.target.closest("button[data-delete-operator-id]");
+  if (!deleteButton) {
+    return;
+  }
+
+  const row = deleteButton.closest(".edit-operator-row");
+  if (row) {
+    row.remove();
+  }
+
+  if (!editOperatorList.querySelector(".edit-operator-row")) {
+    const empty = document.createElement("p");
+    empty.className = "operator-empty";
+    empty.textContent = "No operators yet.";
+    editOperatorList.innerHTML = "";
+    editOperatorList.append(empty);
+  }
+});
+
+editFacilityForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const facility = state.facilities.find(
+    (item) => item.id === state.editingFacilityDialogId,
+  );
+  if (!facility) {
+    return;
+  }
+
+  const nextName = editFacilityNameInput.value.trim();
+  if (!nextName) {
+    return;
+  }
+
+  const operatorRows = Array.from(
+    editOperatorList.querySelectorAll(".edit-operator-row"),
+  );
+  facility.name = nextName;
+  facility.operators = operatorRows
+    .map((row) => {
+      const input = row.querySelector('input[data-operator-name-input="true"]');
+      const name = input ? input.value.trim() : "";
+      if (!name) {
+        return null;
+      }
+
+      return {
+        id: row.dataset.operatorId || createId("operator"),
+        name,
+      };
+    })
+    .filter(Boolean);
+
+  saveFacilities();
+  renderFacilities();
+  editFacilityDialog.close();
 });
 
 setupForm.addEventListener("submit", (event) => {
@@ -1913,6 +2271,14 @@ backFieldButton.addEventListener("click", () => {
 });
 
 resetSheetButton.addEventListener("click", resetSheet);
+backToHomeButton.addEventListener("click", () => {
+  showHomeScreen();
+});
+
+loginForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  showHomeScreen();
+});
 
 cancelSkipButton.addEventListener("click", () => {
   skipDialog.close();
@@ -2109,4 +2475,4 @@ applyLanguage();
 syncMobileFieldLayout();
 renderTable();
 renderFacilities();
-showHomeScreen();
+showLoginScreen();

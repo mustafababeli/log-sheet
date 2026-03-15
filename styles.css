@@ -42,6 +42,16 @@ select {
   width: min(780px, 100%);
   display: grid;
   gap: 18px;
+  position: relative;
+}
+
+.home-shell > .primary-button,
+.home-shell > .ghost-button {
+  justify-self: start;
+}
+
+.login-shell {
+  width: min(560px, 100%);
 }
 
 .home-title {
@@ -50,12 +60,32 @@ select {
   font-weight: 700;
 }
 
+.home-language-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(68, 68, 68, 0.18);
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+}
+
 .facilities-panel {
   border: 1px solid rgba(68, 68, 68, 0.16);
   border-radius: 16px;
   padding: 18px;
   display: grid;
   gap: 16px;
+}
+
+.login-panel {
+  gap: 18px;
+}
+
+.login-panel .setup-actions {
+  justify-content: flex-end;
 }
 
 .facilities-header h2,
@@ -84,6 +114,12 @@ select {
   flex-wrap: wrap;
 }
 
+.facility-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .facility-subtitle {
   margin: 0;
   color: var(--muted);
@@ -106,10 +142,42 @@ select {
   cursor: pointer;
 }
 
+.operator-chip.selected {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
 .facility-empty,
 .operator-empty {
   margin: 0;
   color: var(--muted);
+}
+
+html[dir="rtl"] .home-language-button {
+  right: auto;
+  left: 0;
+}
+
+.edit-operators-block {
+  display: grid;
+  gap: 10px;
+}
+
+.edit-operator-list {
+  display: grid;
+  gap: 10px;
+}
+
+.edit-operator-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.danger-button {
+  color: var(--danger);
 }
 
 .app-shell {
@@ -176,6 +244,10 @@ select {
   align-self: end;
 }
 
+#backToHomeButton {
+  white-space: nowrap;
+}
+
 .status-strip {
   margin-top: 10px;
   justify-content: space-between;
@@ -225,6 +297,11 @@ select {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
+}
+
+.primary-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .voice-button {
@@ -288,6 +365,7 @@ select {
   background: var(--paper);
   border: 0;
   box-shadow: none;
+  position: relative;
 }
 
 .paper-header {
@@ -529,6 +607,26 @@ table {
   border-top: 1px solid var(--line);
 }
 
+.sheet-name-item {
+  white-space: nowrap;
+}
+
+.sheet-name-item.selected {
+  font-weight: 700;
+}
+
+.names-sheet-cell {
+  vertical-align: top;
+  padding: 10px 12px;
+}
+
+.names-sheet-box {
+  display: grid;
+  gap: 6px;
+  text-align: right;
+  font-size: 0.95rem;
+}
+
 .sf6-table {
   width: 100%;
 }
@@ -699,6 +797,15 @@ html[dir="rtl"] .sf6-table {
   .facilities-panel,
   .facility-card {
     padding: 14px;
+  }
+
+  .facility-card-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .edit-operator-row {
+    grid-template-columns: 1fr;
   }
 
   .app-shell {

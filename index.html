@@ -7,9 +7,18 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <section id="homeScreen" class="home-screen">
+    <section id="homeScreen" class="home-screen hidden">
       <div class="home-shell">
-        <h1 class="home-title">Electricity Daily Log</h1>
+        <button
+          id="homeLanguageButton"
+          class="home-language-button"
+          type="button"
+          aria-label="Toggle language"
+          title="Toggle language"
+        >
+          A
+        </button>
+        <h1 id="homeTitle" class="home-title">Electricity Daily Log</h1>
         <button
           id="openFacilityDialogButton"
           class="primary-button"
@@ -17,13 +26,49 @@
         >
           New Facility
         </button>
+        <button id="homeNextButton" class="primary-button" type="button">
+          Next
+        </button>
         <div class="facilities-panel">
           <div class="facilities-header">
-            <h2>Facilities</h2>
+            <h2 id="facilitiesHeading">Facilities</h2>
           </div>
           <div id="facilityList" class="facility-list"></div>
         </div>
       </div>
+    </section>
+
+    <section id="loginScreen" class="home-screen hidden">
+      <form id="loginForm" class="home-shell login-shell">
+        <h1 id="loginTitle" class="home-title">Log In</h1>
+        <div class="facilities-panel login-panel">
+          <div class="control-group">
+            <span id="loginUsernameText" class="strip-label">Username</span>
+            <input
+              id="loginUsernameInput"
+              type="text"
+              autocomplete="username"
+            />
+          </div>
+          <div class="control-group">
+            <span id="loginPasswordText" class="strip-label">Password</span>
+            <input
+              id="loginPasswordInput"
+              type="password"
+              autocomplete="current-password"
+            />
+          </div>
+          <div class="setup-actions">
+            <button
+              id="enterFacilitiesButton"
+              class="primary-button"
+              type="submit"
+            >
+              Enter
+            </button>
+          </div>
+        </div>
+      </form>
     </section>
 
     <div id="appShell" class="app-shell hidden">
@@ -37,6 +82,9 @@
 
       <section class="control-strip">
         <div class="control-row info-row">
+          <button id="backToHomeButton" class="ghost-button" type="button">
+            Back To Facilities
+          </button>
           <div class="control-group">
             <span id="sheetDateText" class="strip-label">Sheet Date</span>
             <strong id="sheetDateLabel">No date selected</strong>
@@ -172,6 +220,42 @@
             Close
           </button>
           <button class="primary-button" type="submit">Save Operator</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="editFacilityDialog">
+      <form id="editFacilityForm" class="setup-form" method="dialog">
+        <h2>Edit Facility</h2>
+        <label for="editFacilityNameInput">Facility Name</label>
+        <input
+          id="editFacilityNameInput"
+          name="editFacilityNameInput"
+          type="text"
+          required
+        />
+
+        <div class="edit-operators-block">
+          <p class="strip-label">Operators</p>
+          <div id="editOperatorList" class="edit-operator-list"></div>
+        </div>
+
+        <div class="setup-actions">
+          <button
+            id="cancelEditFacilityButton"
+            class="ghost-button"
+            type="button"
+          >
+            Close
+          </button>
+          <button
+            id="deleteFacilityButton"
+            class="ghost-button danger-button"
+            type="button"
+          >
+            Delete Facility
+          </button>
+          <button class="primary-button" type="submit">Save Changes</button>
         </div>
       </form>
     </dialog>
