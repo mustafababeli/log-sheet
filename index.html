@@ -7,7 +7,26 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div class="app-shell">
+    <section id="homeScreen" class="home-screen">
+      <div class="home-shell">
+        <h1 class="home-title">Electricity Daily Log</h1>
+        <button
+          id="openFacilityDialogButton"
+          class="primary-button"
+          type="button"
+        >
+          New Facility
+        </button>
+        <div class="facilities-panel">
+          <div class="facilities-header">
+            <h2>Facilities</h2>
+          </div>
+          <div id="facilityList" class="facility-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <div id="appShell" class="app-shell hidden">
       <button
         id="settingsButton"
         class="settings-icon-button"
@@ -118,6 +137,44 @@
         </button>
       </section>
     </div>
+
+    <dialog id="facilityDialog">
+      <form id="facilityForm" class="setup-form" method="dialog">
+        <h2>Add Facility</h2>
+        <label for="facilityNameInput">Facility Name</label>
+        <input
+          id="facilityNameInput"
+          name="facilityNameInput"
+          type="text"
+          required
+        />
+        <div class="setup-actions">
+          <button id="cancelFacilityButton" class="ghost-button" type="button">
+            Close
+          </button>
+          <button class="primary-button" type="submit">Save Facility</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="operatorDialog">
+      <form id="operatorForm" class="setup-form" method="dialog">
+        <h2>Add Operator</h2>
+        <label for="operatorNameInput">Operator Name</label>
+        <input
+          id="operatorNameInput"
+          name="operatorNameInput"
+          type="text"
+          required
+        />
+        <div class="setup-actions">
+          <button id="cancelOperatorButton" class="ghost-button" type="button">
+            Close
+          </button>
+          <button class="primary-button" type="submit">Save Operator</button>
+        </div>
+      </form>
+    </dialog>
 
     <dialog id="setupDialog">
       <form id="setupForm" class="setup-form" method="dialog">

@@ -20,10 +20,96 @@ body {
   background: #fff;
 }
 
+.hidden {
+  display: none !important;
+}
+
 button,
 input,
 select {
   font: inherit;
+}
+
+.home-screen {
+  min-height: 100vh;
+  padding: 32px 18px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.home-shell {
+  width: min(780px, 100%);
+  display: grid;
+  gap: 18px;
+}
+
+.home-title {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+}
+
+.facilities-panel {
+  border: 1px solid rgba(68, 68, 68, 0.16);
+  border-radius: 16px;
+  padding: 18px;
+  display: grid;
+  gap: 16px;
+}
+
+.facilities-header h2,
+.facility-card-header h3 {
+  margin: 0;
+}
+
+.facility-list {
+  display: grid;
+  gap: 14px;
+}
+
+.facility-card {
+  border: 1px solid rgba(68, 68, 68, 0.14);
+  border-radius: 14px;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.facility-card-header {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.facility-subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.operator-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.operator-chip {
+  border: 1px solid rgba(13, 106, 85, 0.24);
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: rgba(13, 106, 85, 0.08);
+  cursor: pointer;
+}
+
+.facility-empty,
+.operator-empty {
+  margin: 0;
+  color: var(--muted);
 }
 
 .app-shell {
@@ -600,6 +686,19 @@ html[dir="rtl"] .sf6-table {
 @media (max-width: 640px) {
   body {
     font-size: 14px;
+  }
+
+  .home-screen {
+    padding: 24px 14px;
+  }
+
+  .home-shell {
+    gap: 14px;
+  }
+
+  .facilities-panel,
+  .facility-card {
+    padding: 14px;
   }
 
   .app-shell {

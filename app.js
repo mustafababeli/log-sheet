@@ -187,6 +187,7 @@ const SF6_COLUMNS = [
 const STORAGE_PREFIX = "electricity-log-sheet";
 const HEADER_STORAGE_KEY = `${STORAGE_PREFIX}-header-overrides`;
 const SETTINGS_STORAGE_KEY = `${STORAGE_PREFIX}-settings`;
+const FACILITIES_STORAGE_KEY = `${STORAGE_PREFIX}-facilities`;
 const UI_TEXT = {
   en: {
     sheetDate: "Sheet Date",
@@ -247,8 +248,26 @@ const state = {
   headerOverrides: {},
   editingHeaderId: null,
   language: "en",
+  facilities: [],
+  selectedFacilityId: "",
+  selectedOperatorId: "",
+  editingFacilityId: "",
 };
 
+const homeScreen = document.getElementById("homeScreen");
+const appShell = document.getElementById("appShell");
+const facilityList = document.getElementById("facilityList");
+const openFacilityDialogButton = document.getElementById(
+  "openFacilityDialogButton",
+);
+const facilityDialog = document.getElementById("facilityDialog");
+const facilityForm = document.getElementById("facilityForm");
+const facilityNameInput = document.getElementById("facilityNameInput");
+const cancelFacilityButton = document.getElementById("cancelFacilityButton");
+const operatorDialog = document.getElementById("operatorDialog");
+const operatorForm = document.getElementById("operatorForm");
+const operatorNameInput = document.getElementById("operatorNameInput");
+const cancelOperatorButton = document.getElementById("cancelOperatorButton");
 const setupDialog = document.getElementById("setupDialog");
 const skipDialog = document.getElementById("skipDialog");
 const headerDialog = document.getElementById("headerDialog");
@@ -349,6 +368,132 @@ function loadSettings() {
   } catch {
     return { language: "en" };
   }
+}
+
+function loadFacilities() {
+  const saved = localStorage.getItem(FACILITIES_STORAGE_KEY);
+  if (!saved) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(saved);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .filter((facility) => facility && typeof facility.name === "string")
+      .map((facility) => ({
+        id:
+          facility.id ||
+          `facility-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        name: facility.name.trim(),
+        operators: Array.isArray(facility.operators)
+          ? facility.operators
+              .filter(
+                (operator) => operator && typeof operator.name === "string",
+              )
+              .map((operator) => ({
+                id:
+                  operator.id ||
+                  `operator-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                name: operator.name.trim(),
+              }))
+          : [],
+      }));
+  } catch {
+    return [];
+  }
+}
+
+function saveFacilities() {
+  localStorage.setItem(
+    FACILITIES_STORAGE_KEY,
+    JSON.stringify(state.facilities),
+  );
+}
+
+function createId(prefix) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function renderFacilities() {
+  facilityList.innerHTML = "";
+
+  if (state.facilities.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "facility-empty";
+    empty.textContent = "No facilities yet. Add your first facility.";
+    facilityList.append(empty);
+    return;
+  }
+
+  state.facilities.forEach((facility) => {
+    const card = document.createElement("article");
+    card.className = "facility-card";
+
+    const header = document.createElement("div");
+    header.className = "facility-card-header";
+
+    const title = document.createElement("h3");
+    title.textContent = facility.name;
+
+    const addOperatorButton = document.createElement("button");
+    addOperatorButton.type = "button";
+    addOperatorButton.className = "ghost-button";
+    addOperatorButton.textContent = "Add Operator";
+    addOperatorButton.dataset.facilityId = facility.id;
+
+    header.append(title, addOperatorButton);
+
+    const operatorsTitle = document.createElement("p");
+    operatorsTitle.className = "facility-subtitle";
+    operatorsTitle.textContent = "Operators";
+
+    const operatorsList = document.createElement("div");
+    operatorsList.className = "operator-list";
+
+    if (facility.operators.length === 0) {
+      const emptyOperators = document.createElement("p");
+      emptyOperators.className = "operator-empty";
+      emptyOperators.textContent = "No operators yet.";
+      operatorsList.append(emptyOperators);
+    } else {
+      facility.operators.forEach((operator) => {
+        const operatorButton = document.createElement("button");
+        operatorButton.type = "button";
+        operatorButton.className = "operator-chip";
+        operatorButton.textContent = operator.name;
+        operatorButton.dataset.facilityId = facility.id;
+        operatorButton.dataset.operatorId = operator.id;
+        operatorsList.append(operatorButton);
+      });
+    }
+
+    card.append(header, operatorsTitle, operatorsList);
+    facilityList.append(card);
+  });
+}
+
+function showHomeScreen() {
+  homeScreen.classList.remove("hidden");
+  appShell.classList.add("hidden");
+}
+
+function showAppShell() {
+  homeScreen.classList.add("hidden");
+  appShell.classList.remove("hidden");
+}
+
+function selectOperator(facilityId, operatorId) {
+  state.selectedFacilityId = facilityId;
+  state.selectedOperatorId = operatorId;
+  showAppShell();
+  const initialDate = getToday();
+  sheetDateInput.value = initialDate;
+  startHourSelect.value = "0";
+  openSheet(initialDate, 0);
 }
 
 function saveSettings() {
@@ -1272,6 +1417,8 @@ function renderMainTable() {
         `feed33-${fieldIndex}`,
         field,
         2,
+        1,
+        "vertical",
       ),
     );
   });
@@ -1294,6 +1441,8 @@ function renderMainTable() {
         `feed11-${fieldIndex}`,
         field,
         2,
+        1,
+        "vertical",
       ),
     );
   });
@@ -1597,6 +1746,87 @@ function resetSheet() {
   refreshUi();
 }
 
+openFacilityDialogButton.addEventListener("click", () => {
+  facilityNameInput.value = "";
+  facilityDialog.showModal();
+  window.setTimeout(() => {
+    facilityNameInput.focus();
+  }, 0);
+});
+
+cancelFacilityButton.addEventListener("click", () => {
+  facilityDialog.close();
+});
+
+facilityForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const name = facilityNameInput.value.trim();
+  if (!name) {
+    return;
+  }
+
+  state.facilities.push({
+    id: createId("facility"),
+    name,
+    operators: [],
+  });
+  saveFacilities();
+  renderFacilities();
+  facilityDialog.close();
+});
+
+cancelOperatorButton.addEventListener("click", () => {
+  operatorDialog.close();
+});
+
+operatorForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const name = operatorNameInput.value.trim();
+  if (!name || !state.editingFacilityId) {
+    return;
+  }
+
+  const facility = state.facilities.find(
+    (item) => item.id === state.editingFacilityId,
+  );
+  if (!facility) {
+    return;
+  }
+
+  facility.operators.push({
+    id: createId("operator"),
+    name,
+  });
+  saveFacilities();
+  renderFacilities();
+  operatorDialog.close();
+});
+
+facilityList.addEventListener("click", (event) => {
+  const addOperatorButton = event.target.closest(
+    "button[data-facility-id]:not([data-operator-id])",
+  );
+  if (addOperatorButton) {
+    state.editingFacilityId = addOperatorButton.dataset.facilityId || "";
+    operatorNameInput.value = "";
+    operatorDialog.showModal();
+    window.setTimeout(() => {
+      operatorNameInput.focus();
+    }, 0);
+    return;
+  }
+
+  const operatorButton = event.target.closest(
+    "button[data-facility-id][data-operator-id]",
+  );
+  if (operatorButton) {
+    selectOperator(
+      operatorButton.dataset.facilityId || "",
+      operatorButton.dataset.operatorId || "",
+    );
+  }
+});
+
 setupForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const date = sheetDateInput.value;
@@ -1873,11 +2103,10 @@ window.addEventListener("resize", syncMobileFieldLayout);
 populateHourOptions();
 state.language = loadSettings().language;
 state.headerOverrides = loadHeaderOverrides();
+state.facilities = loadFacilities();
 setupVoiceRecognition();
 applyLanguage();
 syncMobileFieldLayout();
 renderTable();
-const initialDate = getToday();
-sheetDateInput.value = initialDate;
-startHourSelect.value = "0";
-openSheet(initialDate, 0);
+renderFacilities();
+showHomeScreen();
