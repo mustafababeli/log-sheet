@@ -194,6 +194,10 @@ const UI_TEXT = {
     facilities: "Facilities",
     newFacility: "New Facility",
     next: "Next",
+    workAreas: "Work Areas",
+    gateway: "Daily Log Sheet",
+    attendance: "Attendance",
+    monthlyReadings: "Monthly Readings",
     addFacility: "Add Facility",
     facilityName: "Facility Name",
     saveFacility: "Save Facility",
@@ -222,7 +226,7 @@ const UI_TEXT = {
     settings: "Settings",
     startTalking: "Start Talking",
     stopTalking: "Stop Talking",
-    openCamera: "Open Camera",
+    fastInput: "Fast Input",
     back: "Back",
     saveAndNext: "Save And Next",
     skipSpots: "Skip Spots",
@@ -264,7 +268,7 @@ const UI_TEXT = {
     settings: "الإعدادات",
     startTalking: "ابدأ التحدث",
     stopTalking: "إيقاف التحدث",
-    openCamera: "فتح الكاميرا",
+    fastInput: "ادخال سريع",
     back: "رجوع",
     saveAndNext: "حفظ والانتقال",
     skipSpots: "تخطي خانات",
@@ -298,12 +302,20 @@ const state = {
 
 const homeScreen = document.getElementById("homeScreen");
 const loginScreen = document.getElementById("loginScreen");
+const moduleScreen = document.getElementById("moduleScreen");
 const appShell = document.getElementById("appShell");
 const homeTitle = document.getElementById("homeTitle");
 const facilitiesHeading = document.getElementById("facilitiesHeading");
 const homeLanguageButton = document.getElementById("homeLanguageButton");
 const facilityList = document.getElementById("facilityList");
 const homeNextButton = document.getElementById("homeNextButton");
+const moduleTitle = document.getElementById("moduleTitle");
+const gatewayButton = document.getElementById("gatewayButton");
+const attendanceButton = document.getElementById("attendanceButton");
+const monthlyReadingsButton = document.getElementById("monthlyReadingsButton");
+const gatewayTitle = document.getElementById("gatewayTitle");
+const attendanceTitle = document.getElementById("attendanceTitle");
+const monthlyReadingsTitle = document.getElementById("monthlyReadingsTitle");
 const loginTitle = document.getElementById("loginTitle");
 const loginForm = document.getElementById("loginForm");
 const loginUsernameText = document.getElementById("loginUsernameText");
@@ -347,10 +359,7 @@ const resetSheetButton = document.getElementById("resetSheetButton");
 const settingsButton = document.getElementById("settingsButton");
 const backToHomeButton = document.getElementById("backToHomeButton");
 const resetHeaderButton = document.getElementById("resetHeaderButton");
-const cameraButton = document.getElementById("cameraButton");
-const closeCameraButton = document.getElementById("closeCameraButton");
-const captureCameraButton = document.getElementById("captureCameraButton");
-const retakeCameraButton = document.getElementById("retakeCameraButton");
+const fastInputButton = document.getElementById("fastInputButton");
 const saveFieldButton = document.getElementById("saveFieldButton");
 const exportExcelButton = document.getElementById("exportExcelButton");
 const exportImageButton = document.getElementById("exportImageButton");
@@ -369,6 +378,9 @@ const activeHourLabel = document.getElementById("activeHourLabel");
 const progressLabel = document.getElementById("progressLabel");
 const completionLabel = document.getElementById("completionLabel");
 const saveStatus = document.getElementById("saveStatus");
+const sheetStage = document.querySelector(".sheet-stage");
+const sheetTopScroller = document.getElementById("sheetTopScroller");
+const sheetTopScrollerInner = document.getElementById("sheetTopScrollerInner");
 const logTable = document.getElementById("logTable");
 const sf6Table = document.getElementById("sf6Table");
 const dateDay = document.getElementById("dateDay");
@@ -381,11 +393,13 @@ const headerHorizontalButton = document.getElementById(
   "headerHorizontalButton",
 );
 const headerVerticalButton = document.getElementById("headerVerticalButton");
-const cameraDialog = document.getElementById("cameraDialog");
-const cameraVideo = document.getElementById("cameraVideo");
-const cameraCanvas = document.getElementById("cameraCanvas");
-const cameraSnapshot = document.getElementById("cameraSnapshot");
-const cameraStatus = document.getElementById("cameraStatus");
+const fastInputDialog = document.getElementById("fastInputDialog");
+const fastInputForm = document.getElementById("fastInputForm");
+const fastInputFieldName = document.getElementById("fastInputFieldName");
+const fastInputValue = document.getElementById("fastInputValue");
+const closeFastInputButton = document.getElementById("closeFastInputButton");
+const fastInputBackButton = document.getElementById("fastInputBackButton");
+const fastInputSaveButton = document.getElementById("fastInputSaveButton");
 const settingsDialog = document.getElementById("settingsDialog");
 const settingsForm = document.getElementById("settingsForm");
 const settingsTitle = document.getElementById("settingsTitle");
@@ -411,9 +425,9 @@ const valueGroup = document.querySelector(".value-group");
 
 let recognition = null;
 let isListening = false;
-let cameraStream = null;
 let selectedHeaderOrientation = "horizontal";
 let currentFieldInActionRow = false;
+let syncingSheetScroll = false;
 
 function t(key) {
   return UI_TEXT[state.language]?.[key] || UI_TEXT.en[key] || key;
@@ -605,18 +619,28 @@ function openFacilityEditor(facilityId) {
 function showHomeScreen() {
   homeScreen.classList.remove("hidden");
   loginScreen.classList.add("hidden");
+  moduleScreen.classList.add("hidden");
   appShell.classList.add("hidden");
 }
 
 function showLoginScreen() {
   homeScreen.classList.add("hidden");
   loginScreen.classList.remove("hidden");
+  moduleScreen.classList.add("hidden");
+  appShell.classList.add("hidden");
+}
+
+function showModuleScreen() {
+  homeScreen.classList.add("hidden");
+  loginScreen.classList.add("hidden");
+  moduleScreen.classList.remove("hidden");
   appShell.classList.add("hidden");
 }
 
 function showAppShell() {
   homeScreen.classList.add("hidden");
   loginScreen.classList.add("hidden");
+  moduleScreen.classList.add("hidden");
   appShell.classList.remove("hidden");
 }
 
@@ -657,6 +681,14 @@ function applyLanguage() {
   homeLanguageButton.textContent = state.language === "ar" ? "EN" : "ع";
   homeLanguageButton.setAttribute("aria-label", t("language"));
   homeLanguageButton.setAttribute("title", t("language"));
+  moduleTitle.textContent =
+    state.language === "ar" ? "مساحات العمل" : t("workAreas");
+  gatewayTitle.textContent =
+    state.language === "ar" ? "سجل اليوم" : t("gateway");
+  attendanceTitle.textContent =
+    state.language === "ar" ? "الحضور" : t("attendance");
+  monthlyReadingsTitle.textContent =
+    state.language === "ar" ? "القراءات الشهرية" : t("monthlyReadings");
   loginTitle.textContent =
     state.language === "ar" ? "تسجيل الدخول" : t("loginTitle");
   loginUsernameText.textContent =
@@ -672,7 +704,7 @@ function applyLanguage() {
   openSetupButton.textContent = t("changeDate");
   resetSheetButton.textContent = t("resetSheet");
   voiceButton.textContent = isListening ? t("stopTalking") : t("startTalking");
-  cameraButton.textContent = t("openCamera");
+  fastInputButton.textContent = t("fastInput");
   backFieldButton.textContent = t("back");
   saveFieldButton.textContent = t("saveAndNext");
   manageSkipsButton.textContent = t("skipSpots");
@@ -689,6 +721,7 @@ function applyLanguage() {
   settingsResetSheetButton.textContent = t("resetSheet");
   settingsSkipSpotsButton.textContent = t("skipSpots");
   fieldValueInput.placeholder = t("valuePlaceholder");
+  fastInputValue.placeholder = t("valuePlaceholder");
   facilityDialog.querySelector("h2").textContent = t("addFacility");
   facilityDialog.querySelector('label[for="facilityNameInput"]').textContent =
     t("facilityName");
@@ -1083,6 +1116,62 @@ function drawCellContent(context, cell, paperRect, scale) {
   context.lineWidth = 1;
   context.strokeRect(x, y, width, height);
 
+  const mixedHeader = cell.querySelector(".mixed-header-stack");
+  if (mixedHeader) {
+    const mainLabel = mixedHeader.querySelector(".main-vertical-label");
+    const verticalSubLabel = mixedHeader.querySelector(".sub-label-vertical");
+    const horizontalSubLabel = mixedHeader.querySelector(
+      ".sub-label-horizontal",
+    );
+
+    if (horizontalSubLabel) {
+      drawVerticalText(
+        context,
+        mainLabel?.textContent?.trim() || "",
+        {
+          x,
+          y,
+          width,
+          height: height * 0.62,
+        },
+        `${Math.max(10, Math.round(11 * scale))}px Arial`,
+        computed.color || "#111111",
+      );
+
+      drawCenteredText(
+        context,
+        horizontalSubLabel.textContent.trim(),
+        {
+          x,
+          y: y + height * 0.62,
+          width,
+          height: height * 0.32,
+        },
+        `700 ${Math.max(9, Math.round(9 * scale))}px Arial`,
+        computed.color || "#111111",
+      );
+      return;
+    }
+
+    const labels = [mainLabel, verticalSubLabel].filter(Boolean);
+    const sectionHeight = height / Math.max(labels.length, 1);
+    labels.forEach((node, index) => {
+      drawVerticalText(
+        context,
+        node.textContent.trim(),
+        {
+          x,
+          y: y + index * sectionHeight,
+          width,
+          height: sectionHeight,
+        },
+        `${Math.max(10, Math.round(11 * scale))}px Arial`,
+        computed.color || "#111111",
+      );
+    });
+    return;
+  }
+
   const verticalWords = Array.from(cell.querySelectorAll(".vertical-word"));
   if (verticalWords.length > 0) {
     const sectionHeight = height / verticalWords.length;
@@ -1275,73 +1364,25 @@ function setHeaderOrientationSelection(orientation) {
   headerVerticalButton.classList.toggle("active", orientation === "vertical");
 }
 
-async function openCamera() {
-  if (!navigator.mediaDevices?.getUserMedia) {
-    cameraStatus.textContent = "Camera is not supported in this browser.";
-    cameraStatus.classList.add("error");
-    cameraDialog.showModal();
+function updateFastInputPanel() {
+  if (!state.date) {
+    fastInputFieldName.value = "";
+    fastInputValue.value = "";
     return;
   }
 
-  try {
-    cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: "environment",
-      },
-      audio: false,
-    });
-
-    cameraVideo.srcObject = cameraStream;
-    cameraVideo.hidden = false;
-    cameraSnapshot.hidden = true;
-    cameraStatus.textContent =
-      "Camera opened. Capture a photo of the meter number.";
-    cameraStatus.classList.remove("error");
-    cameraDialog.showModal();
-  } catch {
-    cameraStatus.textContent = "Camera access was blocked or is unavailable.";
-    cameraStatus.classList.add("error");
-    cameraDialog.showModal();
-  }
+  const currentHour = getCurrentHour();
+  const currentField = getCurrentField();
+  fastInputFieldName.value = getFieldDisplayLabel(currentField);
+  fastInputValue.value = state.entries[currentHour][currentField.key] || "";
+  fastInputValue.disabled = isSkippedField(currentField.key);
+  fastInputSaveButton.disabled = isSkippedField(currentField.key);
 }
 
-function stopCamera() {
-  if (!cameraStream) {
-    return;
-  }
-
-  cameraStream.getTracks().forEach((track) => track.stop());
-  cameraStream = null;
-  cameraVideo.srcObject = null;
-}
-
-function captureCameraFrame() {
-  if (!cameraStream) {
-    cameraStatus.textContent = "Open the camera first.";
-    cameraStatus.classList.add("error");
-    return;
-  }
-
-  const width = cameraVideo.videoWidth;
-  const height = cameraVideo.videoHeight;
-  if (!width || !height) {
-    cameraStatus.textContent =
-      "Camera is still loading. Try again in a moment.";
-    cameraStatus.classList.add("error");
-    return;
-  }
-
-  cameraCanvas.width = width;
-  cameraCanvas.height = height;
-  const context = cameraCanvas.getContext("2d");
-  context.drawImage(cameraVideo, 0, 0, width, height);
-
-  cameraSnapshot.src = cameraCanvas.toDataURL("image/png");
-  cameraSnapshot.hidden = false;
-  cameraVideo.hidden = true;
-  cameraStatus.textContent =
-    "Photo captured. OCR is not installed yet, so this is camera-only for now.";
-  cameraStatus.classList.remove("error");
+function saveFastInputField() {
+  fieldValueInput.value = fastInputValue.value;
+  saveCurrentField();
+  updateFastInputPanel();
 }
 
 function getCurrentHour() {
@@ -1424,11 +1465,20 @@ function getHeaderDisplayText(
     : config.text;
 }
 
+function getCurrentFieldHeaderText(
+  headerId,
+  fallbackText,
+  fallbackOrientation = "horizontal",
+) {
+  const config = getHeaderOverride(headerId, fallbackText, fallbackOrientation);
+  return config.subText ? `${config.text} (${config.subText})` : config.text;
+}
+
 function getFieldDisplayLabel(field) {
   const parts = [];
 
   if (field.groupHeaderId) {
-    parts.push(getHeaderDisplayText(field.groupHeaderId, field.group));
+    parts.push(getCurrentFieldHeaderText(field.groupHeaderId, field.group));
   }
 
   if (field.subgroupHeaderId) {
@@ -1445,8 +1495,18 @@ function getFieldDisplayLabel(field) {
   return parts.join(" - ");
 }
 
-function appendHeaderContent(cell, text, subText, orientation, large = false) {
-  if (orientation === "vertical") {
+function appendHeaderContent(
+  cell,
+  text,
+  subText,
+  orientation,
+  large = false,
+  labelRole = "default",
+) {
+  const shouldStayHorizontal = labelRole === "main";
+  const shouldStayVertical = labelRole === "sub";
+
+  if (shouldStayVertical) {
     if (subText) {
       const stack = document.createElement("div");
       stack.className = "vertical-stack";
@@ -1461,43 +1521,46 @@ function appendHeaderContent(cell, text, subText, orientation, large = false) {
 
       stack.append(mainSpan, subSpan);
       cell.append(stack);
-    } else {
-      const span = document.createElement("div");
-      span.className = large ? "vertical-word large" : "vertical-word";
-      span.textContent = text;
-      cell.append(span);
+      return;
     }
+
+    const span = document.createElement("div");
+    span.className = large ? "vertical-word large" : "vertical-word";
+    span.textContent = text;
+    cell.append(span);
     return;
   }
 
-  if (subText) {
-    const mainSpan = document.createElement("div");
-    mainSpan.className = "header-text horizontal";
-    if (large) {
-      mainSpan.classList.add("large");
+  if (shouldStayHorizontal || subText) {
+    const stack = document.createElement("div");
+    stack.className = "header-text horizontal";
+
+    if (!subText) {
+      stack.textContent = text;
+      cell.append(stack);
+      return;
     }
+
+    const mainSpan = document.createElement("div");
+    mainSpan.className = "main-horizontal-label";
     mainSpan.textContent = text;
 
     const subSpan = document.createElement("div");
-    subSpan.className = "header-subtext";
+    subSpan.className =
+      orientation === "vertical"
+        ? "vertical-word sub-label-vertical"
+        : "header-subtext sub-label-horizontal";
     subSpan.textContent = subText;
 
-    mainSpan.textContent = "";
-
-    const mainText = document.createElement("div");
-    mainText.textContent = text;
-
-    mainSpan.append(mainText, subSpan);
-    cell.append(mainSpan);
-  } else {
-    const span = document.createElement("div");
-    span.className = "header-text horizontal";
-    if (large) {
-      span.classList.add("large");
-    }
-    span.textContent = text;
-    cell.append(span);
+    stack.append(mainSpan, subSpan);
+    cell.append(stack);
+    return;
   }
+
+  const span = document.createElement("div");
+  span.className = large ? "vertical-word large" : "vertical-word";
+  span.textContent = text;
+  cell.append(span);
 }
 
 function createEditableHeaderCell(
@@ -1509,19 +1572,24 @@ function createEditableHeaderCell(
   colSpan = 1,
   defaultOrientation = "horizontal",
   large = false,
+  labelRole = "default",
+  editable = true,
 ) {
   const cell = createCell(tag, className, "", rowSpan, colSpan);
   const config = getHeaderOverride(headerId, text, defaultOrientation);
-  cell.classList.add("editable-header");
-  cell.dataset.headerId = headerId;
-  cell.dataset.defaultText = text;
-  cell.dataset.defaultOrientation = defaultOrientation;
+  if (editable) {
+    cell.classList.add("editable-header");
+    cell.dataset.headerId = headerId;
+    cell.dataset.defaultText = text;
+    cell.dataset.defaultOrientation = defaultOrientation;
+  }
   appendHeaderContent(
     cell,
     config.text,
     config.subText,
     config.orientation,
     large,
+    labelRole,
   );
   return cell;
 }
@@ -1542,6 +1610,8 @@ function renderMainTable() {
       1,
       "vertical",
       true,
+      "default",
+      false,
     ),
   );
 
@@ -1554,6 +1624,9 @@ function renderMainTable() {
         group.group,
         2,
         group.fields.length,
+        "horizontal",
+        false,
+        "main",
       ),
     );
     group.fields.forEach((field, fieldIndex) => {
@@ -1566,6 +1639,9 @@ function renderMainTable() {
           1,
           1,
           "vertical",
+          false,
+          "sub",
+          false,
         ),
       );
     });
@@ -1580,6 +1656,10 @@ function renderMainTable() {
         group.group,
         1,
         group.fields.length,
+        "horizontal",
+        false,
+        "main",
+        false,
       ),
     );
     group.fields.forEach((field, fieldIndex) => {
@@ -1592,6 +1672,9 @@ function renderMainTable() {
           1,
           1,
           "vertical",
+          false,
+          "sub",
+          false,
         ),
       );
       row3.append(
@@ -1603,6 +1686,9 @@ function renderMainTable() {
           1,
           1,
           "vertical",
+          false,
+          "sub",
+          false,
         ),
       );
     });
@@ -1616,6 +1702,10 @@ function renderMainTable() {
       "FEEDERS 33 KV",
       1,
       FEEDERS_33.length,
+      "horizontal",
+      false,
+      "main",
+      false,
     ),
   );
   FEEDERS_33.forEach((field, fieldIndex) => {
@@ -1628,6 +1718,8 @@ function renderMainTable() {
         2,
         1,
         "vertical",
+        false,
+        "main",
       ),
     );
   });
@@ -1640,6 +1732,10 @@ function renderMainTable() {
       "FEEDERS 11 KV",
       1,
       FEEDERS_11.length,
+      "horizontal",
+      false,
+      "main",
+      false,
     ),
   );
   FEEDERS_11.forEach((field, fieldIndex) => {
@@ -1652,6 +1748,8 @@ function renderMainTable() {
         2,
         1,
         "vertical",
+        false,
+        "main",
       ),
     );
   });
@@ -1664,16 +1762,53 @@ function renderMainTable() {
       "TEMPRETURE",
       1,
       6,
+      "horizontal",
+      false,
+      "main",
+      false,
     ),
   );
   row2.append(
-    createEditableHeaderCell("th", "subgroup", "temperature-tr1", "TR.1", 1, 2),
+    createEditableHeaderCell(
+      "th",
+      "subgroup",
+      "temperature-tr1",
+      "TR.1",
+      1,
+      2,
+      "horizontal",
+      false,
+      "main",
+      false,
+    ),
   );
   row2.append(
-    createEditableHeaderCell("th", "subgroup", "temperature-tr2", "TR.2", 1, 2),
+    createEditableHeaderCell(
+      "th",
+      "subgroup",
+      "temperature-tr2",
+      "TR.2",
+      1,
+      2,
+      "horizontal",
+      false,
+      "main",
+      false,
+    ),
   );
   row2.append(
-    createEditableHeaderCell("th", "subgroup", "temperature-tr3", "TR.3", 1, 2),
+    createEditableHeaderCell(
+      "th",
+      "subgroup",
+      "temperature-tr3",
+      "TR.3",
+      1,
+      2,
+      "horizontal",
+      false,
+      "main",
+      false,
+    ),
   );
   ["W", "O", "W", "O", "W", "O"].forEach((field, fieldIndex) => {
     row3.append(
@@ -1682,6 +1817,12 @@ function renderMainTable() {
         "unit-row temp-cell",
         `temperature-unit-${fieldIndex}`,
         field,
+        1,
+        1,
+        "horizontal",
+        false,
+        "main",
+        false,
       ),
     );
   });
@@ -1742,17 +1883,54 @@ function renderMainTable() {
 
 function renderSf6Table() {
   const row1 = document.createElement("tr");
-  row1.append(createEditableHeaderCell("th", "sf6-title", "sf6-title", "Sf6"));
+  row1.append(
+    createEditableHeaderCell(
+      "th",
+      "sf6-title",
+      "sf6-title",
+      "Sf6",
+      1,
+      1,
+      "horizontal",
+      false,
+      "main",
+      false,
+    ),
+  );
   SF6_COLUMNS.forEach((column, index) => {
     const className = index >= 8 ? "sf6-small" : "sf6-head";
     row1.append(
-      createEditableHeaderCell("th", className, `sf6-col-${index}`, column),
+      createEditableHeaderCell(
+        "th",
+        className,
+        `sf6-col-${index}`,
+        column,
+        1,
+        1,
+        "horizontal",
+        false,
+        "main",
+        false,
+      ),
     );
   });
   row1.append(buildNamesSheetCell());
 
   const row2 = document.createElement("tr");
-  row2.append(createEditableHeaderCell("th", "sf6-time", "sf6-time", "Time"));
+  row2.append(
+    createEditableHeaderCell(
+      "th",
+      "sf6-time",
+      "sf6-time",
+      "Time",
+      1,
+      1,
+      "horizontal",
+      false,
+      "main",
+      false,
+    ),
+  );
   SF6_COLUMNS.forEach(() => {
     row2.append(createCell("td", "sf6-value", ""));
   });
@@ -1776,6 +1954,16 @@ function renderSf6Table() {
 function renderTable() {
   renderMainTable();
   renderSf6Table();
+  syncSheetScrollbars();
+}
+
+function syncSheetScrollbars() {
+  const sheetPaper = document.querySelector(".sheet-paper");
+  if (!sheetPaper) {
+    return;
+  }
+
+  sheetTopScrollerInner.style.width = `${sheetPaper.scrollWidth}px`;
 }
 
 function buildNamesSheetCell() {
@@ -1900,6 +2088,7 @@ function setActiveHour(index) {
 function refreshUi() {
   renderTable();
   updateEntryPanel();
+  updateFastInputPanel();
 }
 
 function openSheet(date, hourIndex) {
@@ -2011,7 +2200,29 @@ homeLanguageButton.addEventListener("click", () => {
 });
 
 homeNextButton.addEventListener("click", () => {
+  if (!state.selectedFacilityId || !state.selectedOperatorId) {
+    return;
+  }
+
+  showModuleScreen();
+});
+
+gatewayButton.addEventListener("click", () => {
   openSelectedOperatorSheet();
+});
+
+attendanceButton.addEventListener("click", () => {
+  saveStatus.textContent =
+    state.language === "ar"
+      ? "قسم الحضور قادم لاحقاً"
+      : "Attendance is coming soon";
+});
+
+monthlyReadingsButton.addEventListener("click", () => {
+  saveStatus.textContent =
+    state.language === "ar"
+      ? "قسم القراءات الشهرية قادم لاحقاً"
+      : "Monthly Readings is coming soon";
 });
 
 cancelFacilityButton.addEventListener("click", () => {
@@ -2088,10 +2299,13 @@ operatorForm.addEventListener("submit", (event) => {
     id: createId("operator"),
     name,
   });
+
+  operatorNameInput.value = "";
+  state.editingFacilityId = "";
+  operatorDialog.close();
   saveFacilities();
   renderFacilities();
   renderSheetNames();
-  operatorDialog.close();
 });
 
 facilityList.addEventListener("click", (event) => {
@@ -2242,8 +2456,13 @@ shareSheetButton.addEventListener("click", () => {
   shareSheetFile();
 });
 
-cameraButton.addEventListener("click", () => {
-  openCamera();
+fastInputButton.addEventListener("click", () => {
+  updateFastInputPanel();
+  fastInputDialog.showModal();
+  window.setTimeout(() => {
+    fastInputValue.focus();
+    fastInputValue.select();
+  }, 0);
 });
 
 voiceButton.addEventListener("click", () => {
@@ -2262,7 +2481,6 @@ voiceButton.addEventListener("click", () => {
 saveFieldButton.addEventListener("click", () => {
   saveCurrentField();
   moveField(1);
-  startVoiceCapture();
 });
 
 backFieldButton.addEventListener("click", () => {
@@ -2272,7 +2490,7 @@ backFieldButton.addEventListener("click", () => {
 
 resetSheetButton.addEventListener("click", resetSheet);
 backToHomeButton.addEventListener("click", () => {
-  showHomeScreen();
+  showModuleScreen();
 });
 
 loginForm.addEventListener("submit", (event) => {
@@ -2330,6 +2548,42 @@ fieldValueInput.addEventListener("input", () => {
   }
 });
 
+fastInputValue.addEventListener("input", () => {
+  const cleanedValue = normalizeValueInput(fastInputValue.value);
+  if (fastInputValue.value !== cleanedValue) {
+    fastInputValue.value = cleanedValue;
+  }
+});
+
+fastInputValue.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    fastInputSaveButton.click();
+    return;
+  }
+
+  const allowedKeys = [
+    "Backspace",
+    "Delete",
+    "Tab",
+    "ArrowLeft",
+    "ArrowRight",
+    "ArrowUp",
+    "ArrowDown",
+    "Home",
+    "End",
+    "Enter",
+  ];
+
+  if (allowedKeys.includes(event.key) || event.ctrlKey || event.metaKey) {
+    return;
+  }
+
+  if (!/[0-9.-]/.test(event.key)) {
+    event.preventDefault();
+  }
+});
+
 logTable.addEventListener("click", (event) => {
   const headerCell = event.target.closest("th[data-header-id]");
   if (headerCell) {
@@ -2371,25 +2625,30 @@ cancelHeaderButton.addEventListener("click", () => {
   headerDialog.close();
 });
 
-closeCameraButton.addEventListener("click", () => {
-  stopCamera();
-  cameraDialog.close();
+closeFastInputButton.addEventListener("click", () => {
+  fastInputDialog.close();
 });
 
-captureCameraButton.addEventListener("click", () => {
-  captureCameraFrame();
+fastInputBackButton.addEventListener("click", () => {
+  fieldValueInput.value = fastInputValue.value;
+  saveCurrentField();
+  moveField(-1);
+  updateFastInputPanel();
+  window.setTimeout(() => {
+    fastInputValue.focus();
+    fastInputValue.select();
+  }, 0);
 });
 
-retakeCameraButton.addEventListener("click", () => {
-  if (!cameraStream) {
-    openCamera();
-    return;
-  }
-
-  cameraSnapshot.hidden = true;
-  cameraVideo.hidden = false;
-  cameraStatus.textContent = "Camera reopened. Capture again when ready.";
-  cameraStatus.classList.remove("error");
+fastInputForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  saveFastInputField();
+  moveField(1);
+  updateFastInputPanel();
+  window.setTimeout(() => {
+    fastInputValue.focus();
+    fastInputValue.select();
+  }, 0);
 });
 
 resetHeaderButton.addEventListener("click", () => {
@@ -2427,10 +2686,6 @@ headerVerticalButton.addEventListener("click", () => {
   setHeaderOrientationSelection("vertical");
 });
 
-cameraDialog.addEventListener("close", () => {
-  stopCamera();
-});
-
 settingsButton.addEventListener("click", () => {
   languageSelect.value = state.language;
   settingsDialog.showModal();
@@ -2464,7 +2719,28 @@ settingsForm.addEventListener("submit", (event) => {
   settingsDialog.close();
 });
 
+sheetTopScroller.addEventListener("scroll", () => {
+  if (syncingSheetScroll) {
+    return;
+  }
+
+  syncingSheetScroll = true;
+  sheetStage.scrollLeft = sheetTopScroller.scrollLeft;
+  syncingSheetScroll = false;
+});
+
+sheetStage.addEventListener("scroll", () => {
+  if (syncingSheetScroll) {
+    return;
+  }
+
+  syncingSheetScroll = true;
+  sheetTopScroller.scrollLeft = sheetStage.scrollLeft;
+  syncingSheetScroll = false;
+});
+
 window.addEventListener("resize", syncMobileFieldLayout);
+window.addEventListener("resize", syncSheetScrollbars);
 
 populateHourOptions();
 state.language = loadSettings().language;
@@ -2474,5 +2750,6 @@ setupVoiceRecognition();
 applyLanguage();
 syncMobileFieldLayout();
 renderTable();
+syncSheetScrollbars();
 renderFacilities();
 showLoginScreen();

@@ -71,6 +71,32 @@
       </form>
     </section>
 
+    <section id="moduleScreen" class="home-screen hidden">
+      <div class="home-shell module-shell">
+        <h1 id="moduleTitle" class="home-title">Work Areas</h1>
+        <div class="module-grid">
+          <button id="gatewayButton" class="module-card" type="button">
+            <span id="gatewayTitle" class="module-card-title"
+              >Daily Log Sheet</span
+            >
+            <span class="module-card-copy">Open the daily log sheet.</span>
+          </button>
+          <button id="attendanceButton" class="module-card" type="button">
+            <span id="attendanceTitle" class="module-card-title"
+              >Attendance</span
+            >
+            <span class="module-card-copy">Attendance section.</span>
+          </button>
+          <button id="monthlyReadingsButton" class="module-card" type="button">
+            <span id="monthlyReadingsTitle" class="module-card-title"
+              >Monthly Readings</span
+            >
+            <span class="module-card-copy">Monthly readings section.</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
     <div id="appShell" class="app-shell hidden">
       <button
         id="settingsButton"
@@ -114,8 +140,8 @@
             >
               Start Talking
             </button>
-            <button id="cameraButton" class="ghost-button" type="button">
-              Open Camera
+            <button id="fastInputButton" class="ghost-button" type="button">
+              Fast Input
             </button>
           </div>
           <div class="control-group value-group">
@@ -150,6 +176,12 @@
       </section>
 
       <main class="sheet-stage">
+        <div id="sheetTopScroller" class="sheet-top-scroller">
+          <div
+            id="sheetTopScrollerInner"
+            class="sheet-top-scroller-inner"
+          ></div>
+        </div>
         <div class="sheet-paper">
           <div class="paper-header">
             <div class="date-line">
@@ -346,39 +378,35 @@
       </form>
     </dialog>
 
-    <dialog id="cameraDialog">
-      <div class="setup-form camera-form">
-        <h2>Camera Capture</h2>
-        <p>Point the camera at the meter number, then capture a photo.</p>
-        <video
-          id="cameraVideo"
-          class="camera-video"
-          autoplay
-          playsinline
-          muted
-        ></video>
-        <canvas id="cameraCanvas" class="camera-canvas" hidden></canvas>
-        <img
-          id="cameraSnapshot"
-          class="camera-snapshot"
-          alt="Captured meter reading"
-          hidden
+    <dialog id="fastInputDialog">
+      <form
+        id="fastInputForm"
+        class="setup-form fast-input-form"
+        method="dialog"
+      >
+        <h2>Fast Input</h2>
+        <label for="fastInputFieldName">Current Field</label>
+        <input id="fastInputFieldName" type="text" readonly />
+        <label for="fastInputValue">Value</label>
+        <input
+          id="fastInputValue"
+          type="text"
+          inputmode="decimal"
+          autocomplete="off"
+          placeholder="Type the reading"
         />
-        <p id="cameraStatus" class="voice-status">
-          Camera is ready when you open it.
-        </p>
         <div class="setup-actions">
-          <button id="closeCameraButton" class="ghost-button" type="button">
+          <button id="closeFastInputButton" class="ghost-button" type="button">
             Close
           </button>
-          <button id="captureCameraButton" class="ghost-button" type="button">
-            Capture
+          <button id="fastInputBackButton" class="ghost-button" type="button">
+            Back
           </button>
-          <button id="retakeCameraButton" class="ghost-button" type="button">
-            Retake
+          <button id="fastInputSaveButton" class="primary-button" type="submit">
+            Save And Next
           </button>
         </div>
-      </div>
+      </form>
     </dialog>
 
     <dialog id="settingsDialog">
