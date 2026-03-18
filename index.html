@@ -1,34 +1,51 @@
 <!doctype html>
-<html lang="en">
+<html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Electricity Daily Log</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Manrope:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <section id="homeScreen" class="home-screen hidden">
       <div class="home-shell">
-        <button
-          id="homeLanguageButton"
-          class="home-language-button"
-          type="button"
-          aria-label="Toggle language"
-          title="Toggle language"
-        >
-          A
-        </button>
-        <h1 id="homeTitle" class="home-title">Electricity Daily Log</h1>
-        <button
-          id="openFacilityDialogButton"
-          class="primary-button"
-          type="button"
-        >
-          New Facility
-        </button>
-        <button id="homeNextButton" class="primary-button" type="button">
-          Next
-        </button>
+        <div class="page-ribbon">
+          <button
+            id="homeBackButton"
+            class="ribbon-icon-button"
+            type="button"
+            aria-label="Back"
+            title="Back"
+          ></button>
+          <h1 id="homeTitle" class="home-title">Electricity Daily Log</h1>
+          <button
+            id="homeLanguageButton"
+            class="ribbon-language-button"
+            type="button"
+            aria-label="Toggle language"
+            title="Toggle language"
+          >
+            A
+          </button>
+        </div>
+        <div class="home-actions">
+          <button
+            id="openFacilityDialogButton"
+            class="primary-button"
+            type="button"
+          >
+            New Facility
+          </button>
+          <button id="homeNextButton" class="primary-button" type="button">
+            Next
+          </button>
+        </div>
         <div class="facilities-panel">
           <div class="facilities-header">
             <h2 id="facilitiesHeading">Facilities</h2>
@@ -40,7 +57,20 @@
 
     <section id="loginScreen" class="home-screen hidden">
       <form id="loginForm" class="home-shell login-shell">
-        <h1 id="loginTitle" class="home-title">Log In</h1>
+        <div class="page-ribbon page-ribbon-login">
+          <h1 id="loginTitle" class="home-title login-title">
+            Electricity Operations Log
+          </h1>
+          <button
+            id="loginLanguageButton"
+            class="ribbon-language-button"
+            type="button"
+            aria-label="Toggle language"
+            title="Toggle language"
+          >
+            A
+          </button>
+        </div>
         <div class="facilities-panel login-panel">
           <div class="control-group">
             <span id="loginUsernameText" class="strip-label">Username</span>
@@ -73,25 +103,61 @@
 
     <section id="moduleScreen" class="home-screen hidden">
       <div class="home-shell module-shell">
-        <h1 id="moduleTitle" class="home-title">Work Areas</h1>
+        <div class="page-ribbon">
+          <button
+            id="moduleBackButton"
+            class="ribbon-icon-button"
+            type="button"
+            aria-label="Back"
+            title="Back"
+          ></button>
+          <h1 id="moduleTitle" class="home-title">Work Areas</h1>
+          <button
+            id="moduleLanguageButton"
+            class="ribbon-language-button"
+            type="button"
+            aria-label="Toggle language"
+            title="Toggle language"
+          >
+            A
+          </button>
+        </div>
         <div class="module-grid">
-          <button id="gatewayButton" class="module-card" type="button">
+          <button
+            id="gatewayButton"
+            class="module-card module-card--daily"
+            type="button"
+          >
             <span id="gatewayTitle" class="module-card-title"
               >Daily Log Sheet</span
             >
-            <span class="module-card-copy">Open the daily log sheet.</span>
+            <span id="gatewayCopy" class="module-card-copy"
+              >Open the daily log sheet.</span
+            >
           </button>
-          <button id="attendanceButton" class="module-card" type="button">
+          <button
+            id="attendanceButton"
+            class="module-card module-card--attendance"
+            type="button"
+          >
             <span id="attendanceTitle" class="module-card-title"
               >Attendance</span
             >
-            <span class="module-card-copy">Attendance section.</span>
+            <span id="attendanceCopy" class="module-card-copy"
+              >Attendance section.</span
+            >
           </button>
-          <button id="monthlyReadingsButton" class="module-card" type="button">
+          <button
+            id="monthlyReadingsButton"
+            class="module-card module-card--monthly"
+            type="button"
+          >
             <span id="monthlyReadingsTitle" class="module-card-title"
               >Monthly Readings</span
             >
-            <span class="module-card-copy">Monthly readings section.</span>
+            <span id="monthlyReadingsCopy" class="module-card-copy"
+              >Monthly readings section.</span
+            >
           </button>
         </div>
       </div>
@@ -99,10 +165,34 @@
 
     <section id="monthlyScreen" class="monthly-screen hidden">
       <div class="monthly-shell">
-        <section class="monthly-toolbar">
-          <button id="monthlyBackButton" class="ghost-button" type="button">
-            Back
+        <div class="page-ribbon">
+          <button
+            id="monthlyBackButton"
+            class="ribbon-icon-button"
+            type="button"
+            aria-label="Back"
+            title="Back"
+          ></button>
+          <h1 id="monthlyPageTitle" class="home-title">Monthly Readings</h1>
+          <button
+            id="monthlyLanguageButton"
+            class="ribbon-language-button"
+            type="button"
+            aria-label="Toggle language"
+            title="Toggle language"
+          >
+            A
           </button>
+        </div>
+        <div
+          id="monthlyCameraNotice"
+          class="monthly-camera-notice hidden"
+          role="status"
+          aria-live="polite"
+        >
+          Camera mode is on
+        </div>
+        <section class="monthly-toolbar">
           <button id="monthlyCameraButton" class="ghost-button" type="button">
             Camera
           </button>
@@ -147,19 +237,26 @@
     </section>
 
     <div id="appShell" class="app-shell hidden">
-      <button
-        id="settingsButton"
-        class="settings-icon-button"
-        type="button"
-        aria-label="Settings"
-        title="Settings"
-      ></button>
+      <div class="page-ribbon">
+        <button
+          id="backToHomeButton"
+          class="ribbon-icon-button"
+          type="button"
+          aria-label="Back"
+          title="Back"
+        ></button>
+        <h1 id="dailyPageTitle" class="home-title">Daily Log Sheet</h1>
+        <button
+          id="settingsButton"
+          class="settings-icon-button settings-icon-button--ribbon"
+          type="button"
+          aria-label="Settings"
+          title="Settings"
+        ></button>
+      </div>
 
       <section class="control-strip">
         <div class="control-row info-row">
-          <button id="backToHomeButton" class="ghost-button" type="button">
-            Back To Facilities
-          </button>
           <div class="control-group">
             <span id="sheetDateText" class="strip-label">Sheet Date</span>
             <strong id="sheetDateLabel">No date selected</strong>
@@ -463,8 +560,8 @@
         <h2 id="settingsTitle">Settings</h2>
         <label id="languageLabel" for="languageSelect">Language</label>
         <select id="languageSelect" name="languageSelect">
-          <option value="en">English</option>
           <option value="ar">العربية</option>
+          <option value="en">English</option>
         </select>
         <div class="settings-mobile-actions">
           <button

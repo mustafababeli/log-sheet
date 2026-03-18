@@ -267,8 +267,11 @@ const UI_TEXT = {
     next: "Next",
     workAreas: "Work Areas",
     gateway: "Daily Log Sheet",
+    gatewayCopy: "Open the daily log sheet.",
     attendance: "Attendance",
+    attendanceCopy: "Attendance section.",
     monthlyReadings: "Monthly Readings",
+    monthlyReadingsCopy: "Monthly readings section.",
     addFacility: "Add Facility",
     facilityName: "Facility Name",
     saveFacility: "Save Facility",
@@ -313,8 +316,16 @@ const UI_TEXT = {
   },
   ar: {
     homeTitle: "مركز السجل",
-    facilities: "المنشآت",
+    facilities: "المحطات",
     newFacility: "منشأة جديدة",
+    next: "التالي",
+    workAreas: "مساحات العمل",
+    gateway: "سجل اليوم",
+    gatewayCopy: "افتح سجل القراءات اليومية.",
+    attendance: "الحضور",
+    attendanceCopy: "قسم الحضور.",
+    monthlyReadings: "القراءات الشهرية",
+    monthlyReadingsCopy: "قسم القراءات الشهرية.",
     addFacility: "إضافة منشأة",
     facilityName: "اسم المنشأة",
     saveFacility: "حفظ المنشأة",
@@ -329,7 +340,7 @@ const UI_TEXT = {
     saveChanges: "حفظ التغييرات",
     delete: "حذف",
     deleteFacility: "حذف المنشأة",
-    backToFacilities: "العودة إلى المنشآت",
+    backToFacilities: "العودة إلى المحطات",
     sheetDate: "تاريخ الورقة",
     activeHour: "الساعة الحالية",
     currentField: "الحقل الحالي",
@@ -363,7 +374,7 @@ const state = {
   skippedFields: [],
   headerOverrides: {},
   editingHeaderId: null,
-  language: "en",
+  language: "ar",
   facilities: [],
   selectedFacilityId: "",
   selectedOperatorId: "",
@@ -383,14 +394,22 @@ const monthlyScreen = document.getElementById("monthlyScreen");
 const appShell = document.getElementById("appShell");
 const homeTitle = document.getElementById("homeTitle");
 const facilitiesHeading = document.getElementById("facilitiesHeading");
+const homeBackButton = document.getElementById("homeBackButton");
 const homeLanguageButton = document.getElementById("homeLanguageButton");
+const loginLanguageButton = document.getElementById("loginLanguageButton");
+const moduleBackButton = document.getElementById("moduleBackButton");
+const moduleLanguageButton = document.getElementById("moduleLanguageButton");
+const monthlyLanguageButton = document.getElementById("monthlyLanguageButton");
 const facilityList = document.getElementById("facilityList");
 const homeNextButton = document.getElementById("homeNextButton");
 const moduleTitle = document.getElementById("moduleTitle");
+const dailyPageTitle = document.getElementById("dailyPageTitle");
 const gatewayButton = document.getElementById("gatewayButton");
 const attendanceButton = document.getElementById("attendanceButton");
 const monthlyReadingsButton = document.getElementById("monthlyReadingsButton");
+const monthlyPageTitle = document.getElementById("monthlyPageTitle");
 const monthlyBackButton = document.getElementById("monthlyBackButton");
+const monthlyCameraNotice = document.getElementById("monthlyCameraNotice");
 const monthlyCameraButton = document.getElementById("monthlyCameraButton");
 const monthlyExportImageButton = document.getElementById(
   "monthlyExportImageButton",
@@ -405,8 +424,11 @@ const monthlyOperatorLabel = document.getElementById("monthlyOperatorLabel");
 const monthlySaveStatus = document.getElementById("monthlySaveStatus");
 const monthlyPages = document.getElementById("monthlyPages");
 const gatewayTitle = document.getElementById("gatewayTitle");
+const gatewayCopy = document.getElementById("gatewayCopy");
 const attendanceTitle = document.getElementById("attendanceTitle");
+const attendanceCopy = document.getElementById("attendanceCopy");
 const monthlyReadingsTitle = document.getElementById("monthlyReadingsTitle");
+const monthlyReadingsCopy = document.getElementById("monthlyReadingsCopy");
 const loginTitle = document.getElementById("loginTitle");
 const loginForm = document.getElementById("loginForm");
 const loginUsernameText = document.getElementById("loginUsernameText");
@@ -527,14 +549,14 @@ function t(key) {
 function loadSettings() {
   const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
   if (!saved) {
-    return { language: "en" };
+    return { language: "ar" };
   }
 
   try {
     const parsed = JSON.parse(saved);
     return { language: parsed.language === "ar" ? "ar" : "en" };
   } catch {
-    return { language: "en" };
+    return { language: "ar" };
   }
 }
 
@@ -721,6 +743,9 @@ function showLoginScreen() {
   moduleScreen.classList.add("hidden");
   monthlyScreen.classList.add("hidden");
   appShell.classList.add("hidden");
+  loginLanguageButton.textContent = state.language === "ar" ? "AR" : "EN";
+  loginLanguageButton.setAttribute("aria-label", t("language"));
+  loginLanguageButton.setAttribute("title", t("language"));
 }
 
 function showModuleScreen() {
@@ -795,19 +820,60 @@ function applyLanguage() {
   homeTitle.textContent = t("homeTitle");
   facilitiesHeading.textContent = t("facilities");
   openFacilityDialogButton.textContent = t("newFacility");
-  homeNextButton.textContent = state.language === "ar" ? "التالي" : t("next");
-  homeLanguageButton.textContent = state.language === "ar" ? "EN" : "ع";
+  homeNextButton.textContent = t("next");
+  homeLanguageButton.textContent = state.language === "ar" ? "AR" : "EN";
+  loginLanguageButton.textContent = state.language === "ar" ? "AR" : "EN";
+  moduleLanguageButton.textContent = state.language === "ar" ? "AR" : "EN";
+  monthlyLanguageButton.textContent = state.language === "ar" ? "AR" : "EN";
   homeLanguageButton.setAttribute("aria-label", t("language"));
   homeLanguageButton.setAttribute("title", t("language"));
-  moduleTitle.textContent =
-    state.language === "ar" ? "مساحات العمل" : t("workAreas");
-  gatewayTitle.textContent =
-    state.language === "ar" ? "سجل اليوم" : t("gateway");
-  attendanceTitle.textContent =
-    state.language === "ar" ? "الحضور" : t("attendance");
-  monthlyReadingsTitle.textContent =
-    state.language === "ar" ? "القراءات الشهرية" : t("monthlyReadings");
-  monthlyBackButton.textContent = t("back");
+  loginLanguageButton.setAttribute("aria-label", t("language"));
+  loginLanguageButton.setAttribute("title", t("language"));
+  moduleLanguageButton.setAttribute("aria-label", t("language"));
+  moduleLanguageButton.setAttribute("title", t("language"));
+  monthlyLanguageButton.setAttribute("aria-label", t("language"));
+  monthlyLanguageButton.setAttribute("title", t("language"));
+  homeBackButton.setAttribute(
+    "aria-label",
+    state.language === "ar" ? "العودة إلى تسجيل الدخول" : "Back to login",
+  );
+  homeBackButton.setAttribute(
+    "title",
+    state.language === "ar" ? "العودة إلى تسجيل الدخول" : "Back to login",
+  );
+  moduleBackButton.setAttribute(
+    "aria-label",
+    state.language === "ar" ? "العودة إلى مركز السجل" : "Back to logbook hub",
+  );
+  moduleBackButton.setAttribute(
+    "title",
+    state.language === "ar" ? "العودة إلى مركز السجل" : "Back to logbook hub",
+  );
+  moduleTitle.textContent = t("workAreas");
+  dailyPageTitle.textContent = t("gateway");
+  monthlyPageTitle.textContent = t("monthlyReadings");
+  gatewayTitle.textContent = t("gateway");
+  gatewayCopy.textContent = t("gatewayCopy");
+  attendanceTitle.textContent = t("attendance");
+  attendanceCopy.textContent = t("attendanceCopy");
+  monthlyReadingsTitle.textContent = t("monthlyReadings");
+  monthlyReadingsCopy.textContent = t("monthlyReadingsCopy");
+  backToHomeButton.setAttribute(
+    "aria-label",
+    state.language === "ar" ? "العودة إلى المحطات" : "Back to work areas",
+  );
+  backToHomeButton.setAttribute(
+    "title",
+    state.language === "ar" ? "العودة إلى المحطات" : "Back to work areas",
+  );
+  monthlyBackButton.setAttribute(
+    "aria-label",
+    state.language === "ar" ? "العودة إلى مساحات العمل" : "Back to work areas",
+  );
+  monthlyBackButton.setAttribute(
+    "title",
+    state.language === "ar" ? "العودة إلى مساحات العمل" : "Back to work areas",
+  );
   monthlyMonthText.textContent = state.language === "ar" ? "الشهر" : "Month";
   monthlyFacilityText.textContent =
     state.language === "ar" ? "المنشأة" : "Facility";
@@ -816,7 +882,7 @@ function applyLanguage() {
   monthlyExportImageButton.textContent =
     state.language === "ar" ? "تصدير صورة" : "Export Photo";
   loginTitle.textContent =
-    state.language === "ar" ? "تسجيل الدخول" : t("loginTitle");
+    state.language === "ar" ? "سجل تشغيل المنظومة الكهربائية" : "Electricity Operations Log";
   loginUsernameText.textContent =
     state.language === "ar" ? "اسم المستخدم" : t("username");
   loginPasswordText.textContent =
@@ -838,7 +904,6 @@ function applyLanguage() {
   exportImageButton.textContent =
     state.language === "ar" ? "تصدير صورة" : "Export Photo";
   shareSheetButton.textContent = t("shareSheet");
-  backToHomeButton.textContent = t("backToFacilities");
   settingsTitle.textContent = t("settingsTitle");
   languageLabel.textContent = t("language");
   closeSettingsButton.textContent = t("close");
@@ -1458,8 +1523,15 @@ function populateMonthlyInputs() {
 }
 
 function applyMonthlyPhotoPreviews() {
-  monthlyPages.querySelectorAll("[data-photo-field]").forEach((field) => {
+  const photoFields = Array.from(
+    monthlyPages.querySelectorAll("[data-photo-field]"),
+  );
+
+  photoFields.forEach((field, index) => {
     const photo = state.monthlyPhotos[field.dataset.photoField];
+    const showDemoIndicator = index === 0;
+
+    field.classList.toggle("photo-indicated", Boolean(photo) || showDemoIndicator);
     if (photo) {
       field.classList.add("photo-attached");
       field.style.setProperty(
@@ -1485,6 +1557,9 @@ function updateMonthlyHeader() {
   monthlyFacilityLabel.textContent = facilityName;
   monthlyOperatorLabel.textContent = getSelectedOperator()?.name || "-";
   monthlyCameraButton.classList.toggle("active", state.monthlyCameraMode);
+  monthlyCameraNotice.classList.toggle("hidden", !state.monthlyCameraMode);
+  monthlyCameraNotice.textContent =
+    state.language === "ar" ? "وضع الكاميرا مفعل" : "Camera mode is on";
   monthlyCameraButton.textContent =
     state.language === "ar"
       ? state.monthlyCameraMode
@@ -2943,6 +3018,35 @@ openFacilityDialogButton.addEventListener("click", () => {
 });
 
 homeLanguageButton.addEventListener("click", () => {
+  state.language = state.language === "ar" ? "en" : "ar";
+  saveSettings();
+  applyLanguage();
+  refreshUi();
+});
+
+homeBackButton.addEventListener("click", () => {
+  showLoginScreen();
+});
+
+loginLanguageButton.addEventListener("click", () => {
+  state.language = state.language === "ar" ? "en" : "ar";
+  saveSettings();
+  applyLanguage();
+  refreshUi();
+});
+
+moduleLanguageButton.addEventListener("click", () => {
+  state.language = state.language === "ar" ? "en" : "ar";
+  saveSettings();
+  applyLanguage();
+  refreshUi();
+});
+
+moduleBackButton.addEventListener("click", () => {
+  showHomeScreen();
+});
+
+monthlyLanguageButton.addEventListener("click", () => {
   state.language = state.language === "ar" ? "en" : "ar";
   saveSettings();
   applyLanguage();
