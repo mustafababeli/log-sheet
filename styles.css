@@ -112,6 +112,253 @@ select {
   line-height: 1.5;
 }
 
+.monthly-screen {
+  min-height: 100vh;
+  padding: 24px 16px 40px;
+  background: #f4efe3;
+}
+
+.monthly-shell {
+  width: min(1480px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 16px;
+}
+
+.monthly-toolbar,
+.monthly-status-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: end;
+  background: #fff;
+  padding: 16px;
+  border: 1px solid rgba(68, 68, 68, 0.12);
+  border-radius: 16px;
+}
+
+.monthly-toolbar-group {
+  min-width: 180px;
+  display: grid;
+  gap: 7px;
+}
+
+.monthly-toolbar-group input,
+.monthly-toolbar-group strong {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid rgba(68, 68, 68, 0.25);
+  border-radius: 8px;
+  background: #fff;
+}
+
+#monthlyCameraButton.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.monthly-status-strip {
+  justify-content: flex-end;
+}
+
+.monthly-stage {
+  overflow: auto;
+}
+
+.monthly-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.monthly-pages {
+  display: grid;
+  gap: 24px;
+}
+
+.monthly-page {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 20px 20px 26px;
+  box-shadow: 0 12px 30px rgba(17, 17, 17, 0.08);
+  display: grid;
+  gap: 18px;
+  min-width: 1180px;
+}
+
+.monthly-page-header {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  align-items: center;
+  gap: 16px;
+  font-weight: 700;
+}
+
+.monthly-page-code,
+.monthly-page-date,
+.monthly-page-month {
+  font-size: 1.05rem;
+}
+
+.monthly-sheet-heading {
+  border: 1px solid var(--line);
+  padding: 10px 14px;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.monthly-section-title,
+.monthly-card-title {
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  padding: 10px 12px;
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.monthly-dual-grid,
+.monthly-transformer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.monthly-dual-grid--compact .monthly-card-title {
+  display: none;
+}
+
+.monthly-card {
+  display: grid;
+}
+
+.monthly-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.monthly-table th,
+.monthly-table td {
+  border: 1px solid var(--line);
+  text-align: center;
+  vertical-align: middle;
+  padding: 0;
+  font-size: 0.96rem;
+}
+
+.monthly-table th {
+  padding: 8px 6px;
+  font-weight: 700;
+  background: #fff;
+}
+
+.monthly-table td {
+  height: 42px;
+}
+
+.monthly-seq-cell,
+.monthly-label-cell,
+.monthly-line-type {
+  padding: 6px 8px;
+  font-weight: 700;
+}
+
+.monthly-line-name-cell {
+  width: 40%;
+}
+
+.monthly-cell-input,
+.monthly-notes-input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 10px 8px;
+  font: inherit;
+  text-align: center;
+}
+
+.monthly-cell-input {
+  min-height: 100%;
+}
+
+.monthly-cell-input.photo-attached {
+  background-image: var(--monthly-photo);
+  background-size: cover;
+  background-position: center;
+  color: #fff;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+.monthly-notes-input {
+  min-height: 92px;
+  resize: vertical;
+  text-align: right;
+}
+
+.monthly-cell-input:focus,
+.monthly-notes-input:focus {
+  outline: 2px solid rgba(13, 106, 85, 0.22);
+  outline-offset: -2px;
+}
+
+.monthly-lines-section {
+  display: grid;
+  gap: 0;
+}
+
+.monthly-line-table .monthly-cell-input {
+  min-height: 44px;
+}
+
+.monthly-meta {
+  display: grid;
+  gap: 16px;
+}
+
+.monthly-notes-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  border: 1px solid var(--line);
+}
+
+.monthly-notes-label {
+  padding: 12px 14px;
+  font-weight: 700;
+  border-left: 1px solid var(--line);
+}
+
+.monthly-footer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.monthly-footer-block {
+  border: 1px solid var(--line);
+  padding: 14px 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.monthly-footer-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.monthly-footer-row .monthly-cell-input {
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+  padding-inline: 0;
+}
+
 .login-panel {
   gap: 18px;
 }
@@ -823,6 +1070,21 @@ html[dir="rtl"] .sf6-table {
 }
 
 @media (max-width: 900px) {
+  .monthly-screen {
+    padding-inline: 12px;
+  }
+
+  .monthly-page {
+    min-width: 980px;
+    padding: 16px;
+  }
+
+  .monthly-dual-grid,
+  .monthly-transformer-grid,
+  .monthly-footer-grid {
+    grid-template-columns: 1fr;
+  }
+
   .paper-header {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -838,6 +1100,30 @@ html[dir="rtl"] .sf6-table {
 }
 
 @media (max-width: 640px) {
+  .monthly-toolbar,
+  .monthly-status-strip {
+    padding: 12px;
+  }
+
+  .monthly-toolbar .ghost-button,
+  .monthly-toolbar-group {
+    width: 100%;
+  }
+
+  .monthly-actions .primary-button {
+    width: 100%;
+  }
+
+  .monthly-page {
+    min-width: 860px;
+    padding: 12px;
+  }
+
+  .monthly-page-header {
+    grid-template-columns: 1fr;
+    justify-items: start;
+  }
+
   body {
     font-size: 14px;
   }

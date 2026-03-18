@@ -170,6 +170,21 @@ const FLAT_FIELDS = [
   })),
 ];
 
+const FIELD_INDEX_BY_KEY = new Map(
+  FLAT_FIELDS.map((field, index) => [field.key, index]),
+);
+const FAST_INPUT_ALLOWED_GROUPS = new Set([
+  ...L_GROUPS.map((group) => group.group),
+  "FEEDERS 33 KV",
+  "FEEDERS 11 KV",
+]);
+const FAST_INPUT_FIELDS = FLAT_FIELDS.filter((field) =>
+  FAST_INPUT_ALLOWED_GROUPS.has(field.group),
+);
+const FAST_INPUT_FIELD_KEYS = new Set(
+  FAST_INPUT_FIELDS.map((field) => field.key),
+);
+
 const SF6_COLUMNS = [
   "L1",
   "L2",
@@ -188,6 +203,62 @@ const STORAGE_PREFIX = "electricity-log-sheet";
 const HEADER_STORAGE_KEY = `${STORAGE_PREFIX}-header-overrides`;
 const SETTINGS_STORAGE_KEY = `${STORAGE_PREFIX}-settings`;
 const FACILITIES_STORAGE_KEY = `${STORAGE_PREFIX}-facilities`;
+const MONTHLY_STORAGE_KEY = `${STORAGE_PREFIX}-monthly-readings`;
+const MONTHLY_PHOTO_STORAGE_KEY = `${STORAGE_PREFIX}-monthly-photos`;
+const MONTHLY_FEEDER_GROUPS = [
+  { key: "feeders-a", title: "مغذيات جهة 33", start: 1, count: 24 },
+  { key: "feeders-b", title: "مغذيات جهة 11", start: 1, count: 24 },
+];
+const MONTHLY_RESIDENTIAL_GROUPS = [
+  { key: "residential-a", start: 1, count: 5 },
+  { key: "residential-b", start: 6, count: 5 },
+];
+const MONTHLY_LINE_GROUPS = [
+  { key: "lines-a", lineNumbers: [1, 2, 3, 4] },
+  { key: "lines-b", lineNumbers: [5, 6, 7, 8] },
+];
+const MONTHLY_TRANSFORMER_GROUPS = [
+  {
+    key: "transformers-33",
+    title: "قراءات المحولات الرئيسية جهة 33 kV",
+    labels: [
+      "المحولة الرئيسية رقم / 1",
+      "المحولة الرئيسية رقم / 2",
+      "المحولة الرئيسية رقم / 3",
+      "المحولة الرئيسية رقم / 4",
+    ],
+  },
+  {
+    key: "transformers-132",
+    title: "قراءات المحولات الرئيسية جهة 132 kV",
+    labels: [
+      "المحولة الرئيسية رقم / 1",
+      "المحولة الرئيسية رقم / 2",
+      "المحولة الرئيسية رقم / 3",
+      "المحولة الرئيسية رقم / 4",
+    ],
+  },
+  {
+    key: "service-transformers",
+    title: "قراءات محولات الخدمة",
+    labels: [
+      "محولة الخدمة رقم / 1",
+      "محولة الخدمة رقم / 2",
+      "محولة الخدمة رقم / 3",
+      "محولة الخدمة رقم / 4",
+    ],
+  },
+  {
+    key: "transformers-11",
+    title: "قراءات المحولات الرئيسية جهة 11 kV",
+    labels: [
+      "المحولة الرئيسية رقم / 1",
+      "المحولة الرئيسية رقم / 2",
+      "المحولة الرئيسية رقم / 3",
+      "المحولة الرئيسية رقم / 4",
+    ],
+  },
+];
 const UI_TEXT = {
   en: {
     homeTitle: "Logbook Hub",
@@ -298,11 +369,17 @@ const state = {
   selectedOperatorId: "",
   editingFacilityId: "",
   editingFacilityDialogId: "",
+  monthlyPeriod: "",
+  monthlyEntries: {},
+  monthlyPhotos: {},
+  monthlyCameraMode: false,
+  pendingMonthlyPhotoField: "",
 };
 
 const homeScreen = document.getElementById("homeScreen");
 const loginScreen = document.getElementById("loginScreen");
 const moduleScreen = document.getElementById("moduleScreen");
+const monthlyScreen = document.getElementById("monthlyScreen");
 const appShell = document.getElementById("appShell");
 const homeTitle = document.getElementById("homeTitle");
 const facilitiesHeading = document.getElementById("facilitiesHeading");
@@ -313,6 +390,20 @@ const moduleTitle = document.getElementById("moduleTitle");
 const gatewayButton = document.getElementById("gatewayButton");
 const attendanceButton = document.getElementById("attendanceButton");
 const monthlyReadingsButton = document.getElementById("monthlyReadingsButton");
+const monthlyBackButton = document.getElementById("monthlyBackButton");
+const monthlyCameraButton = document.getElementById("monthlyCameraButton");
+const monthlyExportImageButton = document.getElementById(
+  "monthlyExportImageButton",
+);
+const monthlyCameraInput = document.getElementById("monthlyCameraInput");
+const monthlyMonthInput = document.getElementById("monthlyMonthInput");
+const monthlyMonthText = document.getElementById("monthlyMonthText");
+const monthlyFacilityText = document.getElementById("monthlyFacilityText");
+const monthlyOperatorText = document.getElementById("monthlyOperatorText");
+const monthlyFacilityLabel = document.getElementById("monthlyFacilityLabel");
+const monthlyOperatorLabel = document.getElementById("monthlyOperatorLabel");
+const monthlySaveStatus = document.getElementById("monthlySaveStatus");
+const monthlyPages = document.getElementById("monthlyPages");
 const gatewayTitle = document.getElementById("gatewayTitle");
 const attendanceTitle = document.getElementById("attendanceTitle");
 const monthlyReadingsTitle = document.getElementById("monthlyReadingsTitle");
@@ -620,6 +711,7 @@ function showHomeScreen() {
   homeScreen.classList.remove("hidden");
   loginScreen.classList.add("hidden");
   moduleScreen.classList.add("hidden");
+  monthlyScreen.classList.add("hidden");
   appShell.classList.add("hidden");
 }
 
@@ -627,6 +719,7 @@ function showLoginScreen() {
   homeScreen.classList.add("hidden");
   loginScreen.classList.remove("hidden");
   moduleScreen.classList.add("hidden");
+  monthlyScreen.classList.add("hidden");
   appShell.classList.add("hidden");
 }
 
@@ -634,6 +727,7 @@ function showModuleScreen() {
   homeScreen.classList.add("hidden");
   loginScreen.classList.add("hidden");
   moduleScreen.classList.remove("hidden");
+  monthlyScreen.classList.add("hidden");
   appShell.classList.add("hidden");
 }
 
@@ -641,7 +735,31 @@ function showAppShell() {
   homeScreen.classList.add("hidden");
   loginScreen.classList.add("hidden");
   moduleScreen.classList.add("hidden");
+  monthlyScreen.classList.add("hidden");
   appShell.classList.remove("hidden");
+}
+
+function showMonthlyScreen() {
+  homeScreen.classList.add("hidden");
+  loginScreen.classList.add("hidden");
+  moduleScreen.classList.add("hidden");
+  monthlyScreen.classList.remove("hidden");
+  appShell.classList.add("hidden");
+}
+
+function getSelectedFacility() {
+  return (
+    state.facilities.find((facility) => facility.id === state.selectedFacilityId) ||
+    null
+  );
+}
+
+function getSelectedOperator() {
+  const facility = getSelectedFacility();
+  return (
+    facility?.operators?.find((operator) => operator.id === state.selectedOperatorId) ||
+    null
+  );
 }
 
 function selectOperator(facilityId, operatorId) {
@@ -689,6 +807,14 @@ function applyLanguage() {
     state.language === "ar" ? "الحضور" : t("attendance");
   monthlyReadingsTitle.textContent =
     state.language === "ar" ? "القراءات الشهرية" : t("monthlyReadings");
+  monthlyBackButton.textContent = t("back");
+  monthlyMonthText.textContent = state.language === "ar" ? "الشهر" : "Month";
+  monthlyFacilityText.textContent =
+    state.language === "ar" ? "المنشأة" : "Facility";
+  monthlyOperatorText.textContent =
+    state.language === "ar" ? "المشغل" : "Operator";
+  monthlyExportImageButton.textContent =
+    state.language === "ar" ? "تصدير صورة" : "Export Photo";
   loginTitle.textContent =
     state.language === "ar" ? "تسجيل الدخول" : t("loginTitle");
   loginUsernameText.textContent =
@@ -744,6 +870,7 @@ function applyLanguage() {
     '.primary-button[type="submit"]',
   ).textContent = t("saveChanges");
   renderFacilities();
+  updateMonthlyHeader();
 
   if (!state.date) {
     sheetDateLabel.textContent = t("noDateSelected");
@@ -908,6 +1035,485 @@ function getToday() {
   const month = `${now.getMonth() + 1}`.padStart(2, "0");
   const day = `${now.getDate()}`.padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function getCurrentMonth() {
+  return getToday().slice(0, 7);
+}
+
+function loadAllMonthlyEntries() {
+  const saved = localStorage.getItem(MONTHLY_STORAGE_KEY);
+  if (!saved) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(saved);
+  } catch {
+    return {};
+  }
+}
+
+function loadAllMonthlyPhotos() {
+  const saved = localStorage.getItem(MONTHLY_PHOTO_STORAGE_KEY);
+  if (!saved) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(saved);
+  } catch {
+    return {};
+  }
+}
+
+function getMonthlyStorageBucketKey() {
+  return [
+    state.selectedFacilityId || "facility",
+    state.selectedOperatorId || "operator",
+    state.monthlyPeriod || getCurrentMonth(),
+  ].join("__");
+}
+
+function loadMonthlyEntriesForCurrentSelection() {
+  const allEntries = loadAllMonthlyEntries();
+  return allEntries[getMonthlyStorageBucketKey()] || {};
+}
+
+function saveMonthlyEntries() {
+  const allEntries = loadAllMonthlyEntries();
+  allEntries[getMonthlyStorageBucketKey()] = state.monthlyEntries;
+  localStorage.setItem(MONTHLY_STORAGE_KEY, JSON.stringify(allEntries));
+  monthlySaveStatus.textContent =
+    state.language === "ar" ? "تم حفظ القراءات الشهرية" : "Monthly readings saved";
+}
+
+function loadMonthlyPhotosForCurrentSelection() {
+  const allPhotos = loadAllMonthlyPhotos();
+  return allPhotos[getMonthlyStorageBucketKey()] || {};
+}
+
+function saveMonthlyPhotos() {
+  const allPhotos = loadAllMonthlyPhotos();
+  allPhotos[getMonthlyStorageBucketKey()] = state.monthlyPhotos;
+  localStorage.setItem(MONTHLY_PHOTO_STORAGE_KEY, JSON.stringify(allPhotos));
+  monthlySaveStatus.textContent =
+    state.language === "ar"
+      ? "تم حفظ صورة الحقل"
+      : "Field photo saved";
+}
+
+function formatMonthlyPeriodLabel() {
+  const period = state.monthlyPeriod || getCurrentMonth();
+  const [year, month] = period.split("-");
+  return `${month} / ${year}`;
+}
+
+function createMonthlyFieldKey(...segments) {
+  return segments.join("__");
+}
+
+function isMonthlyNextReadingField(fieldKey) {
+  return fieldKey.endsWith("__next");
+}
+
+function createMonthlyInput(fieldKey, options = {}) {
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "monthly-cell-input";
+  input.dataset.monthlyField = fieldKey;
+  if (isMonthlyNextReadingField(fieldKey)) {
+    input.dataset.photoField = fieldKey;
+  }
+
+  if (options.numeric) {
+    input.inputMode = "decimal";
+    input.dataset.monthlyType = "number";
+  }
+
+  return input;
+}
+
+function createMonthlyInputCell(fieldKey, options = {}) {
+  const cell = document.createElement("td");
+  cell.append(createMonthlyInput(fieldKey, options));
+  return cell;
+}
+
+function createMonthlyNumberedTable(config) {
+  const card = document.createElement("section");
+  card.className = "monthly-card";
+
+  const title = document.createElement("div");
+  title.className = "monthly-card-title";
+  title.textContent = config.title;
+  card.append(title);
+
+  const table = document.createElement("table");
+  table.className = "monthly-table";
+
+  const head = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  [
+    config.numberLabel,
+    config.nameLabel,
+    "القراءة السابقة",
+    "القراءة اللاحقة",
+  ].forEach((label) => {
+    const cell = document.createElement("th");
+    cell.textContent = label;
+    headRow.append(cell);
+  });
+  head.append(headRow);
+
+  const body = document.createElement("tbody");
+  for (let index = 0; index < config.count; index += 1) {
+    const rowNumber = config.start + index;
+    const row = document.createElement("tr");
+
+    const numberCell = document.createElement("td");
+    numberCell.className = "monthly-seq-cell";
+    numberCell.textContent = config.blankNumbers ? "" : String(rowNumber);
+    row.append(numberCell);
+    row.append(
+      createMonthlyInputCell(
+        createMonthlyFieldKey(config.key, rowNumber, "name"),
+      ),
+    );
+    row.append(
+      createMonthlyInputCell(
+        createMonthlyFieldKey(config.key, rowNumber, "previous"),
+        { numeric: true },
+      ),
+    );
+    row.append(
+      createMonthlyInputCell(
+        createMonthlyFieldKey(config.key, rowNumber, "next"),
+        { numeric: true },
+      ),
+    );
+    body.append(row);
+  }
+
+  table.append(head, body);
+  card.append(table);
+  return card;
+}
+
+function createMonthlySectionTitle(text) {
+  const title = document.createElement("div");
+  title.className = "monthly-section-title";
+  title.textContent = text;
+  return title;
+}
+
+function createMonthlyLineReadingsTable(group) {
+  const table = document.createElement("table");
+  table.className = "monthly-table monthly-line-table";
+
+  const head = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  ["اسم الخط", "", "القراءة السابقة", "القراءة اللاحقة"].forEach((label) => {
+    const cell = document.createElement("th");
+    cell.textContent = label;
+    headRow.append(cell);
+  });
+  head.append(headRow);
+
+  const body = document.createElement("tbody");
+  group.lineNumbers.forEach((lineNumber) => {
+    const impRow = document.createElement("tr");
+    const expRow = document.createElement("tr");
+
+    const lineNameCell = document.createElement("td");
+    lineNameCell.className = "monthly-line-name-cell";
+    lineNameCell.rowSpan = 2;
+    lineNameCell.append(
+      createMonthlyInput(createMonthlyFieldKey(group.key, lineNumber, "name")),
+    );
+    impRow.append(lineNameCell);
+
+    const impTypeCell = document.createElement("td");
+    impTypeCell.className = "monthly-line-type";
+    impTypeCell.textContent = "IMP";
+    impRow.append(impTypeCell);
+    impRow.append(
+      createMonthlyInputCell(
+        createMonthlyFieldKey(group.key, lineNumber, "imp", "previous"),
+        { numeric: true },
+      ),
+    );
+    impRow.append(
+      createMonthlyInputCell(
+        createMonthlyFieldKey(group.key, lineNumber, "imp", "next"),
+        { numeric: true },
+      ),
+    );
+
+    const expTypeCell = document.createElement("td");
+    expTypeCell.className = "monthly-line-type";
+    expTypeCell.textContent = "EXP";
+    expRow.append(expTypeCell);
+    expRow.append(
+      createMonthlyInputCell(
+        createMonthlyFieldKey(group.key, lineNumber, "exp", "previous"),
+        { numeric: true },
+      ),
+    );
+    expRow.append(
+      createMonthlyInputCell(
+        createMonthlyFieldKey(group.key, lineNumber, "exp", "next"),
+        { numeric: true },
+      ),
+    );
+
+    body.append(impRow, expRow);
+  });
+
+  table.append(head, body);
+  return table;
+}
+
+function createMonthlyTransformerTable(group) {
+  const card = document.createElement("section");
+  card.className = "monthly-card";
+
+  const title = document.createElement("div");
+  title.className = "monthly-card-title";
+  title.textContent = group.title;
+  card.append(title);
+
+  const table = document.createElement("table");
+  table.className = "monthly-table";
+
+  const head = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  ["رقم المحولة", "القراءة السابقة", "القراءة اللاحقة"].forEach((label) => {
+    const cell = document.createElement("th");
+    cell.textContent = label;
+    headRow.append(cell);
+  });
+  head.append(headRow);
+
+  const body = document.createElement("tbody");
+  group.labels.forEach((label, index) => {
+    const row = document.createElement("tr");
+
+    const nameCell = document.createElement("td");
+    nameCell.className = "monthly-label-cell";
+    nameCell.textContent = label;
+    row.append(nameCell);
+    row.append(
+      createMonthlyInputCell(
+        createMonthlyFieldKey(group.key, index + 1, "previous"),
+        { numeric: true },
+      ),
+    );
+    row.append(
+      createMonthlyInputCell(
+        createMonthlyFieldKey(group.key, index + 1, "next"),
+        { numeric: true },
+      ),
+    );
+
+    body.append(row);
+  });
+
+  table.append(head, body);
+  card.append(table);
+  return card;
+}
+
+function createMonthlyMetaSection() {
+  const section = document.createElement("section");
+  section.className = "monthly-meta";
+
+  const notesRow = document.createElement("div");
+  notesRow.className = "monthly-notes-row";
+
+  const notesLabel = document.createElement("span");
+  notesLabel.className = "monthly-notes-label";
+  notesLabel.textContent = "الملاحظات:";
+
+  const notesInput = document.createElement("textarea");
+  notesInput.className = "monthly-notes-input";
+  notesInput.rows = 3;
+  notesInput.dataset.monthlyField = createMonthlyFieldKey("meta", "notes");
+
+  notesRow.append(notesLabel, notesInput);
+
+  const footerGrid = document.createElement("div");
+  footerGrid.className = "monthly-footer-grid";
+
+  ["left", "right"].forEach((side) => {
+    const block = document.createElement("div");
+    block.className = "monthly-footer-block";
+
+    [
+      ["اسم المراقب:", "observer"],
+      ["التاريخ:", "date"],
+      ["الوقت:", "time"],
+    ].forEach(([label, key]) => {
+      const row = document.createElement("label");
+      row.className = "monthly-footer-row";
+
+      const text = document.createElement("span");
+      text.textContent = label;
+
+      const input = createMonthlyInput(createMonthlyFieldKey("meta", side, key));
+      row.append(text, input);
+      block.append(row);
+    });
+
+    footerGrid.append(block);
+  });
+
+  section.append(notesRow, footerGrid);
+  return section;
+}
+
+function renderMonthlyReadingsSheet() {
+  monthlyPages.innerHTML = "";
+
+  const pageOne = document.createElement("section");
+  pageOne.className = "monthly-page";
+  pageOne.dir = "rtl";
+
+  const pageOneHeader = document.createElement("div");
+  pageOneHeader.className = "monthly-page-header";
+  pageOneHeader.innerHTML =
+    '<span class="monthly-page-code">202</span><span class="monthly-page-date">/ /</span><span class="monthly-page-month">الشهر <strong data-monthly-period-label></strong></span>';
+  pageOne.append(pageOneHeader);
+
+  const feederGrid = document.createElement("div");
+  feederGrid.className = "monthly-dual-grid";
+  MONTHLY_FEEDER_GROUPS.forEach((group) => {
+    feederGrid.append(
+      createMonthlyNumberedTable({
+        ...group,
+        numberLabel: "رقم المغذي",
+        nameLabel: "اسم المغذي",
+      }),
+    );
+  });
+  pageOne.append(feederGrid);
+
+  pageOne.append(createMonthlySectionTitle("قراءات الدور السكنية"));
+
+  const residentialGrid = document.createElement("div");
+  residentialGrid.className = "monthly-dual-grid monthly-dual-grid--compact";
+  MONTHLY_RESIDENTIAL_GROUPS.forEach((group) => {
+    residentialGrid.append(
+      createMonthlyNumberedTable({
+        ...group,
+        title: "قراءات الدور السكنية",
+        numberLabel: "رقم الدار",
+        nameLabel: "اسم شاغل الدار",
+        blankNumbers: true,
+      }),
+    );
+  });
+  pageOne.append(residentialGrid);
+
+  const pageTwo = document.createElement("section");
+  pageTwo.className = "monthly-page";
+  pageTwo.dir = "rtl";
+
+  const pageTwoHeader = document.createElement("div");
+  pageTwoHeader.className = "monthly-sheet-heading";
+  pageTwoHeader.textContent = "قراءات مقاييس الطاقة لمحطة";
+  pageTwo.append(pageTwoHeader);
+
+  const lineSection = document.createElement("section");
+  lineSection.className = "monthly-lines-section";
+  lineSection.append(createMonthlySectionTitle("قراءات الخطوط"));
+
+  const lineGrid = document.createElement("div");
+  lineGrid.className = "monthly-dual-grid monthly-dual-grid--lines";
+  MONTHLY_LINE_GROUPS.forEach((group) => {
+    lineGrid.append(createMonthlyLineReadingsTable(group));
+  });
+  lineSection.append(lineGrid);
+  pageTwo.append(lineSection);
+
+  const transformerGrid = document.createElement("div");
+  transformerGrid.className = "monthly-transformer-grid";
+  MONTHLY_TRANSFORMER_GROUPS.forEach((group) => {
+    transformerGrid.append(createMonthlyTransformerTable(group));
+  });
+  pageTwo.append(transformerGrid);
+  pageTwo.append(createMonthlyMetaSection());
+
+  monthlyPages.append(pageTwo, pageOne);
+  populateMonthlyInputs();
+  updateMonthlyHeader();
+}
+
+function populateMonthlyInputs() {
+  monthlyPages.querySelectorAll("[data-monthly-field]").forEach((input) => {
+    const key = input.dataset.monthlyField;
+    input.value = state.monthlyEntries[key] || "";
+  });
+  applyMonthlyPhotoPreviews();
+}
+
+function applyMonthlyPhotoPreviews() {
+  monthlyPages.querySelectorAll("[data-photo-field]").forEach((field) => {
+    const photo = state.monthlyPhotos[field.dataset.photoField];
+    if (photo) {
+      field.classList.add("photo-attached");
+      field.style.setProperty(
+        "--monthly-photo",
+        `linear-gradient(rgba(17, 17, 17, 0.28), rgba(17, 17, 17, 0.28)), url("${photo}")`,
+      );
+      return;
+    }
+
+    field.classList.remove("photo-attached");
+    field.style.removeProperty("--monthly-photo");
+  });
+}
+
+function updateMonthlyHeader() {
+  if (!state.monthlyPeriod) {
+    state.monthlyPeriod = getCurrentMonth();
+  }
+
+  const facilityName = getSelectedFacility()?.name || "-";
+
+  monthlyMonthInput.value = state.monthlyPeriod;
+  monthlyFacilityLabel.textContent = facilityName;
+  monthlyOperatorLabel.textContent = getSelectedOperator()?.name || "-";
+  monthlyCameraButton.classList.toggle("active", state.monthlyCameraMode);
+  monthlyCameraButton.textContent =
+    state.language === "ar"
+      ? state.monthlyCameraMode
+        ? "الكاميرا مفعلة"
+        : "الكاميرا"
+      : state.monthlyCameraMode
+        ? "Camera On"
+        : "Camera";
+  document
+    .querySelectorAll("[data-monthly-period-label]")
+    .forEach((node) => (node.textContent = formatMonthlyPeriodLabel()));
+  const monthlyHeading = monthlyPages.querySelector(".monthly-sheet-heading");
+  if (monthlyHeading) {
+    monthlyHeading.textContent = `قراءات مقاييس الطاقة لمحطة ${facilityName}`;
+  }
+}
+
+function openMonthlyReadingsScreen() {
+  if (!state.selectedFacilityId || !state.selectedOperatorId) {
+    return;
+  }
+
+  state.monthlyPeriod =
+    monthlyMonthInput.value || state.monthlyPeriod || getCurrentMonth();
+  state.monthlyEntries = loadMonthlyEntriesForCurrentSelection();
+  state.monthlyPhotos = loadMonthlyPhotosForCurrentSelection();
+  renderMonthlyReadingsSheet();
+  monthlySaveStatus.textContent = t("ready");
+  showMonthlyScreen();
 }
 
 function createEmptyEntries() {
@@ -1316,6 +1922,85 @@ async function downloadSheetAsImage() {
   link.click();
 }
 
+function inlineElementStyles(source, target) {
+  const computed = window.getComputedStyle(source);
+  const styleText = Array.from(computed).map(
+    (property) => `${property}: ${computed.getPropertyValue(property)};`,
+  );
+  target.setAttribute("style", styleText.join(" "));
+
+  const sourceChildren = Array.from(source.children);
+  const targetChildren = Array.from(target.children);
+  sourceChildren.forEach((child, index) => {
+    if (targetChildren[index]) {
+      inlineElementStyles(child, targetChildren[index]);
+    }
+  });
+}
+
+function buildMonthlyExportClone(target) {
+  const clone = target.cloneNode(true);
+  inlineElementStyles(target, clone);
+
+  const originalFields = target.querySelectorAll("input, textarea");
+  const clonedFields = clone.querySelectorAll("input, textarea");
+
+  originalFields.forEach((field, index) => {
+    const cloneField = clonedFields[index];
+    if (!cloneField) {
+      return;
+    }
+
+    const replacement = document.createElement("div");
+    replacement.textContent = field.value || "";
+    replacement.className = cloneField.className;
+    replacement.setAttribute("style", cloneField.getAttribute("style") || "");
+
+    if (field.classList.contains("photo-attached")) {
+      replacement.classList.add("photo-attached");
+    }
+
+    replacement.style.display = "flex";
+    replacement.style.alignItems = "center";
+    replacement.style.justifyContent = "center";
+    replacement.style.whiteSpace = "pre-wrap";
+    replacement.style.minHeight = cloneField.style.minHeight || "100%";
+
+    cloneField.replaceWith(replacement);
+  });
+
+  return clone;
+}
+
+async function downloadMonthlyPagesAsImage() {
+  const pages = Array.from(monthlyPages.querySelectorAll(".monthly-page"));
+  if (pages.length === 0) {
+    return;
+  }
+
+  if (typeof window.html2canvas !== "function") {
+    throw new Error("html2canvas is not available");
+  }
+
+  const scale = window.devicePixelRatio > 1 ? 2 : 1;
+  for (const [index, page] of pages.entries()) {
+    const canvas = await window.html2canvas(page, {
+      backgroundColor: "#ffffff",
+      scale,
+      useCORS: true,
+      logging: false,
+    });
+    const link = document.createElement("a");
+    link.href = canvas.toDataURL("image/png");
+    link.download = `monthly-readings-${state.monthlyPeriod || "sheet"}-page-${index + 1}.png`;
+    link.click();
+
+    await new Promise((resolve) => {
+      window.setTimeout(resolve, 150);
+    });
+  }
+}
+
 async function shareSheetFile() {
   if (!state.date) {
     saveStatus.textContent = "Choose a date first";
@@ -1364,15 +2049,48 @@ function setHeaderOrientationSelection(orientation) {
   headerVerticalButton.classList.toggle("active", orientation === "vertical");
 }
 
+function getFastInputFieldIndex(fieldKey) {
+  return FAST_INPUT_FIELDS.findIndex((field) => field.key === fieldKey);
+}
+
+function alignActiveFieldToFastInput() {
+  const currentField = getCurrentField();
+  if (currentField && FAST_INPUT_FIELD_KEYS.has(currentField.key)) {
+    return currentField;
+  }
+
+  const nextFastField =
+    FAST_INPUT_FIELDS.find(
+      (field) => FIELD_INDEX_BY_KEY.get(field.key) >= state.activeFieldIndex,
+    ) || FAST_INPUT_FIELDS[FAST_INPUT_FIELDS.length - 1];
+
+  if (!nextFastField) {
+    return null;
+  }
+
+  state.activeFieldIndex = FIELD_INDEX_BY_KEY.get(nextFastField.key);
+  return nextFastField;
+}
+
 function updateFastInputPanel() {
   if (!state.date) {
     fastInputFieldName.value = "";
     fastInputValue.value = "";
+    fastInputValue.disabled = true;
+    fastInputSaveButton.disabled = true;
     return;
   }
 
   const currentHour = getCurrentHour();
-  const currentField = getCurrentField();
+  const currentField = alignActiveFieldToFastInput();
+  if (!currentField) {
+    fastInputFieldName.value = "";
+    fastInputValue.value = "";
+    fastInputValue.disabled = true;
+    fastInputSaveButton.disabled = true;
+    return;
+  }
+
   fastInputFieldName.value = getFieldDisplayLabel(currentField);
   fastInputValue.value = state.entries[currentHour][currentField.key] || "";
   fastInputValue.disabled = isSkippedField(currentField.key);
@@ -2124,6 +2842,38 @@ function moveField(step) {
   refreshUi();
 }
 
+function moveFastInputField(step) {
+  const currentField = alignActiveFieldToFastInput();
+  if (!currentField) {
+    return;
+  }
+
+  let nextIndex = getFastInputFieldIndex(currentField.key) + step;
+  if (nextIndex < 0) {
+    return;
+  }
+
+  while (
+    nextIndex >= 0 &&
+    nextIndex < FAST_INPUT_FIELDS.length &&
+    isSkippedField(FAST_INPUT_FIELDS[nextIndex].key)
+  ) {
+    nextIndex += step;
+  }
+
+  if (nextIndex >= FAST_INPUT_FIELDS.length) {
+    if (state.activeHourIndex < HOURS.length - 1) {
+      setActiveHour(state.activeHourIndex + 1);
+      alignActiveFieldToFastInput();
+      refreshUi();
+    }
+    return;
+  }
+
+  state.activeFieldIndex = FIELD_INDEX_BY_KEY.get(FAST_INPUT_FIELDS[nextIndex].key);
+  refreshUi();
+}
+
 function saveCurrentField() {
   const hour = getCurrentHour();
   const field = getCurrentField();
@@ -2219,10 +2969,102 @@ attendanceButton.addEventListener("click", () => {
 });
 
 monthlyReadingsButton.addEventListener("click", () => {
-  saveStatus.textContent =
+  openMonthlyReadingsScreen();
+});
+
+monthlyBackButton.addEventListener("click", () => {
+  showModuleScreen();
+});
+
+monthlyCameraButton.addEventListener("click", () => {
+  state.monthlyCameraMode = !state.monthlyCameraMode;
+  state.pendingMonthlyPhotoField = "";
+  updateMonthlyHeader();
+  monthlySaveStatus.textContent =
     state.language === "ar"
-      ? "قسم القراءات الشهرية قادم لاحقاً"
-      : "Monthly Readings is coming soon";
+      ? state.monthlyCameraMode
+        ? "اضغط على أي حقل شهري لفتح الكاميرا"
+        : "تم إيقاف وضع الكاميرا"
+      : state.monthlyCameraMode
+        ? "Tap a monthly field to open the camera"
+        : "Camera mode turned off";
+});
+
+monthlyMonthInput.addEventListener("change", () => {
+  state.monthlyPeriod = monthlyMonthInput.value || getCurrentMonth();
+  state.monthlyEntries = loadMonthlyEntriesForCurrentSelection();
+  state.monthlyPhotos = loadMonthlyPhotosForCurrentSelection();
+  populateMonthlyInputs();
+  updateMonthlyHeader();
+  monthlySaveStatus.textContent = t("ready");
+});
+
+monthlyScreen.addEventListener("click", (event) => {
+  if (!state.monthlyCameraMode) {
+    return;
+  }
+
+  const target = event.target.closest(".monthly-cell-input");
+  if (!target || !target.dataset.photoField) {
+    return;
+  }
+
+  event.preventDefault();
+  state.pendingMonthlyPhotoField = target.dataset.photoField;
+  monthlyCameraInput.value = "";
+  monthlyCameraInput.click();
+});
+
+monthlyScreen.addEventListener("input", (event) => {
+  const target = event.target.closest("[data-monthly-field]");
+  if (!target) {
+    return;
+  }
+
+  let nextValue = target.value;
+  if (target.dataset.monthlyType === "number") {
+    nextValue = normalizeValueInput(target.value);
+    if (target.value !== nextValue) {
+      target.value = nextValue;
+    }
+  }
+
+  state.monthlyEntries[target.dataset.monthlyField] = nextValue;
+  saveMonthlyEntries();
+});
+
+monthlyCameraInput.addEventListener("change", () => {
+  const file = monthlyCameraInput.files?.[0];
+  const fieldKey = state.pendingMonthlyPhotoField;
+  state.pendingMonthlyPhotoField = "";
+
+  if (!file || !fieldKey) {
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.addEventListener("load", () => {
+    const photoData = typeof reader.result === "string" ? reader.result : "";
+    if (!photoData) {
+      return;
+    }
+
+    state.monthlyPhotos[fieldKey] = photoData;
+    saveMonthlyPhotos();
+    applyMonthlyPhotoPreviews();
+  });
+  reader.readAsDataURL(file);
+});
+
+monthlyExportImageButton.addEventListener("click", async () => {
+  try {
+    await downloadMonthlyPagesAsImage();
+    monthlySaveStatus.textContent =
+      state.language === "ar" ? "تم تصدير الصورة" : "Photo exported";
+  } catch {
+    monthlySaveStatus.textContent =
+      state.language === "ar" ? "فشل تصدير الصورة" : "Photo export failed";
+  }
 });
 
 cancelFacilityButton.addEventListener("click", () => {
@@ -2457,6 +3299,7 @@ shareSheetButton.addEventListener("click", () => {
 });
 
 fastInputButton.addEventListener("click", () => {
+  alignActiveFieldToFastInput();
   updateFastInputPanel();
   fastInputDialog.showModal();
   window.setTimeout(() => {
@@ -2632,7 +3475,7 @@ closeFastInputButton.addEventListener("click", () => {
 fastInputBackButton.addEventListener("click", () => {
   fieldValueInput.value = fastInputValue.value;
   saveCurrentField();
-  moveField(-1);
+  moveFastInputField(-1);
   updateFastInputPanel();
   window.setTimeout(() => {
     fastInputValue.focus();
@@ -2643,7 +3486,7 @@ fastInputBackButton.addEventListener("click", () => {
 fastInputForm.addEventListener("submit", (event) => {
   event.preventDefault();
   saveFastInputField();
-  moveField(1);
+  moveFastInputField(1);
   updateFastInputPanel();
   window.setTimeout(() => {
     fastInputValue.focus();
@@ -2746,7 +3589,10 @@ populateHourOptions();
 state.language = loadSettings().language;
 state.headerOverrides = loadHeaderOverrides();
 state.facilities = loadFacilities();
+state.monthlyPeriod = getCurrentMonth();
+monthlyMonthInput.value = state.monthlyPeriod;
 setupVoiceRecognition();
+renderMonthlyReadingsSheet();
 applyLanguage();
 syncMobileFieldLayout();
 renderTable();

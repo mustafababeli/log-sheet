@@ -97,6 +97,55 @@
       </div>
     </section>
 
+    <section id="monthlyScreen" class="monthly-screen hidden">
+      <div class="monthly-shell">
+        <section class="monthly-toolbar">
+          <button id="monthlyBackButton" class="ghost-button" type="button">
+            Back
+          </button>
+          <button id="monthlyCameraButton" class="ghost-button" type="button">
+            Camera
+          </button>
+          <label class="monthly-toolbar-group" for="monthlyMonthInput">
+            <span id="monthlyMonthText" class="strip-label">Month</span>
+            <input id="monthlyMonthInput" type="month" />
+          </label>
+          <div class="monthly-toolbar-group">
+            <span id="monthlyFacilityText" class="strip-label">Facility</span>
+            <strong id="monthlyFacilityLabel">-</strong>
+          </div>
+          <div class="monthly-toolbar-group">
+            <span id="monthlyOperatorText" class="strip-label">Operator</span>
+            <strong id="monthlyOperatorLabel">-</strong>
+          </div>
+        </section>
+
+        <section class="monthly-status-strip">
+          <span id="monthlySaveStatus" class="save-status">Ready</span>
+        </section>
+
+        <main class="monthly-stage">
+          <div id="monthlyPages" class="monthly-pages"></div>
+        </main>
+        <section class="monthly-actions">
+          <button
+            id="monthlyExportImageButton"
+            class="primary-button"
+            type="button"
+          >
+            Export Photo
+          </button>
+        </section>
+        <input
+          id="monthlyCameraInput"
+          class="hidden"
+          type="file"
+          accept="image/*"
+          capture="environment"
+        />
+      </div>
+    </section>
+
     <div id="appShell" class="app-shell hidden">
       <button
         id="settingsButton"
@@ -451,6 +500,7 @@
       </form>
     </dialog>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>
