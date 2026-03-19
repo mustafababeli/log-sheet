@@ -205,6 +205,11 @@ const SETTINGS_STORAGE_KEY = `${STORAGE_PREFIX}-settings`;
 const FACILITIES_STORAGE_KEY = `${STORAGE_PREFIX}-facilities`;
 const MONTHLY_STORAGE_KEY = `${STORAGE_PREFIX}-monthly-readings`;
 const MONTHLY_PHOTO_STORAGE_KEY = `${STORAGE_PREFIX}-monthly-photos`;
+const MONTHLY_PHOTO_BUCKET = "monthly-photos";
+const SUPABASE_CONFIG = window.LOG_SHEET_SUPABASE_CONFIG || {
+  url: "",
+  anonKey: "",
+};
 const MONTHLY_FEEDER_GROUPS = [
   { key: "feeders-a", title: "مغذيات جهة 33", start: 1, count: 24 },
   { key: "feeders-b", title: "مغذيات جهة 11", start: 1, count: 24 },
@@ -288,9 +293,21 @@ const UI_TEXT = {
     deleteFacility: "Delete Facility",
     backToFacilities: "Back To Facilities",
     loginTitle: "Log In",
-    username: "Username",
+    username: "Email",
     password: "Password",
-    enter: "Enter",
+    enter: "Sign In",
+    authStatusCloudReady: "Supabase is ready. Sign in to sync your data.",
+    authStatusLocalMode:
+      "Supabase is not configured yet. The app is running in local mode.",
+    authStatusChecking: "Checking your session...",
+    authStatusConnecting: "Checking Supabase connection...",
+    authStatusSigningIn: "Signing in...",
+    authStatusSignedOut: "Signed out.",
+    authStatusSignedInAs: "Signed in as",
+    authStatusSignInFailed: "Sign-in failed. Check your email and password.",
+    authStatusCloudError: "Supabase connection failed. Using local mode.",
+    authStatusCloudRetry: "Supabase is ready. Sign in to continue.",
+    authStatusSyncing: "Syncing facilities...",
     sheetDate: "Sheet Date",
     activeHour: "Active Hour",
     currentField: "Current Field",
@@ -311,8 +328,12 @@ const UI_TEXT = {
     close: "Close",
     saveSettings: "Save Settings",
     valuePlaceholder: "Type or speak the reading",
-    noDateSelected: "No date selected",
-    ready: "Ready",
+  noDateSelected: "No date selected",
+  ready: "Ready",
+    syncCloud: "Cloud",
+    syncLocal: "Local",
+    syncSyncing: "Syncing",
+    syncError: "Error",
   },
   ar: {
     homeTitle: "مركز السجل",
@@ -341,6 +362,24 @@ const UI_TEXT = {
     delete: "حذف",
     deleteFacility: "حذف المنشأة",
     backToFacilities: "العودة إلى المحطات",
+    loginTitle: "تسجيل الدخول",
+    username: "البريد الإلكتروني",
+    password: "كلمة المرور",
+    enter: "دخول",
+    authStatusCloudReady:
+      "تم تجهيز الربط مع Supabase. سجل الدخول لمزامنة البيانات.",
+    authStatusLocalMode:
+      "لم يتم إعداد Supabase بعد. التطبيق يعمل حالياً بوضع محلي.",
+    authStatusChecking: "جاري التحقق من الجلسة...",
+    authStatusConnecting: "جاري التحقق من اتصال Supabase...",
+    authStatusSigningIn: "جاري تسجيل الدخول...",
+    authStatusSignedOut: "تم تسجيل الخروج.",
+    authStatusSignedInAs: "تم تسجيل الدخول باسم",
+    authStatusSignInFailed:
+      "فشل تسجيل الدخول. تحقق من البريد الإلكتروني وكلمة المرور.",
+    authStatusCloudError: "فشل الاتصال مع Supabase. تم التحويل للوضع المحلي.",
+    authStatusCloudRetry: "تم تجهيز Supabase. سجل الدخول للمتابعة.",
+    authStatusSyncing: "جاري مزامنة المحطات...",
     sheetDate: "تاريخ الورقة",
     activeHour: "الساعة الحالية",
     currentField: "الحقل الحالي",
@@ -363,6 +402,10 @@ const UI_TEXT = {
     valuePlaceholder: "اكتب أو انطق القراءة",
     noDateSelected: "لم يتم اختيار تاريخ",
     ready: "جاهز",
+    syncCloud: "سحابة",
+    syncLocal: "محلي",
+    syncSyncing: "مزامنة",
+    syncError: "خطأ",
   },
 };
 
@@ -385,6 +428,9 @@ const state = {
   monthlyPhotos: {},
   monthlyCameraMode: false,
   pendingMonthlyPhotoField: "",
+  supabaseEnabled: false,
+  sessionUser: null,
+  syncState: "local",
 };
 
 const homeScreen = document.getElementById("homeScreen");
@@ -396,10 +442,13 @@ const homeTitle = document.getElementById("homeTitle");
 const facilitiesHeading = document.getElementById("facilitiesHeading");
 const homeBackButton = document.getElementById("homeBackButton");
 const homeLanguageButton = document.getElementById("homeLanguageButton");
+const homeSyncBadge = document.getElementById("homeSyncBadge");
 const loginLanguageButton = document.getElementById("loginLanguageButton");
 const moduleBackButton = document.getElementById("moduleBackButton");
 const moduleLanguageButton = document.getElementById("moduleLanguageButton");
+const moduleSyncBadge = document.getElementById("moduleSyncBadge");
 const monthlyLanguageButton = document.getElementById("monthlyLanguageButton");
+const monthlySyncBadge = document.getElementById("monthlySyncBadge");
 const facilityList = document.getElementById("facilityList");
 const homeNextButton = document.getElementById("homeNextButton");
 const moduleTitle = document.getElementById("moduleTitle");
@@ -422,6 +471,7 @@ const monthlyOperatorText = document.getElementById("monthlyOperatorText");
 const monthlyFacilityLabel = document.getElementById("monthlyFacilityLabel");
 const monthlyOperatorLabel = document.getElementById("monthlyOperatorLabel");
 const monthlySaveStatus = document.getElementById("monthlySaveStatus");
+const monthlyStatusLoader = document.getElementById("monthlyStatusLoader");
 const monthlyPages = document.getElementById("monthlyPages");
 const gatewayTitle = document.getElementById("gatewayTitle");
 const gatewayCopy = document.getElementById("gatewayCopy");
@@ -431,8 +481,10 @@ const monthlyReadingsTitle = document.getElementById("monthlyReadingsTitle");
 const monthlyReadingsCopy = document.getElementById("monthlyReadingsCopy");
 const loginTitle = document.getElementById("loginTitle");
 const loginForm = document.getElementById("loginForm");
+const loginLoaderWrap = document.getElementById("loginLoaderWrap");
 const loginUsernameText = document.getElementById("loginUsernameText");
 const loginPasswordText = document.getElementById("loginPasswordText");
+const loginStatusText = document.getElementById("loginStatusText");
 const loginUsernameInput = document.getElementById("loginUsernameInput");
 const loginPasswordInput = document.getElementById("loginPasswordInput");
 const enterFacilitiesButton = document.getElementById("enterFacilitiesButton");
@@ -442,6 +494,7 @@ const openFacilityDialogButton = document.getElementById(
 const facilityDialog = document.getElementById("facilityDialog");
 const facilityForm = document.getElementById("facilityForm");
 const facilityNameInput = document.getElementById("facilityNameInput");
+const facilityDialogStatus = document.getElementById("facilityDialogStatus");
 const cancelFacilityButton = document.getElementById("cancelFacilityButton");
 const operatorDialog = document.getElementById("operatorDialog");
 const operatorForm = document.getElementById("operatorForm");
@@ -491,6 +544,8 @@ const activeHourLabel = document.getElementById("activeHourLabel");
 const progressLabel = document.getElementById("progressLabel");
 const completionLabel = document.getElementById("completionLabel");
 const saveStatus = document.getElementById("saveStatus");
+const dailySyncBadge = document.getElementById("dailySyncBadge");
+const dailyStatusLoader = document.getElementById("dailyStatusLoader");
 const sheetStage = document.querySelector(".sheet-stage");
 const sheetTopScroller = document.getElementById("sheetTopScroller");
 const sheetTopScrollerInner = document.getElementById("sheetTopScrollerInner");
@@ -515,6 +570,21 @@ const fastInputBackButton = document.getElementById("fastInputBackButton");
 const fastInputSaveButton = document.getElementById("fastInputSaveButton");
 const settingsDialog = document.getElementById("settingsDialog");
 const settingsForm = document.getElementById("settingsForm");
+const monthlyPhotoPreviewDialog = document.getElementById(
+  "monthlyPhotoPreviewDialog",
+);
+const monthlyPhotoPreviewImage = document.getElementById(
+  "monthlyPhotoPreviewImage",
+);
+const replaceMonthlyPhotoButton = document.getElementById(
+  "replaceMonthlyPhotoButton",
+);
+const deleteMonthlyPhotoButton = document.getElementById(
+  "deleteMonthlyPhotoButton",
+);
+const closeMonthlyPhotoPreviewButton = document.getElementById(
+  "closeMonthlyPhotoPreviewButton",
+);
 const settingsTitle = document.getElementById("settingsTitle");
 const languageLabel = document.getElementById("languageLabel");
 const languageSelect = document.getElementById("languageSelect");
@@ -541,9 +611,1019 @@ let isListening = false;
 let selectedHeaderOrientation = "horizontal";
 let currentFieldInActionRow = false;
 let syncingSheetScroll = false;
+let supabaseClient = null;
+let suppressAuthRedirect = false;
+let pendingDailySaveTimer = null;
+let pendingMonthlySaveTimer = null;
+let loginTransitionBusy = false;
+const monthlyPhotoUrlCache = new Map();
+let activeMonthlyPreviewField = "";
 
 function t(key) {
   return UI_TEXT[state.language]?.[key] || UI_TEXT.en[key] || key;
+}
+
+function isLoginLoadingMessage(message) {
+  if (loginTransitionBusy) {
+    return true;
+  }
+
+  return [
+    t("authStatusConnecting"),
+    t("authStatusChecking"),
+    t("authStatusSigningIn"),
+    t("authStatusSyncing"),
+  ].includes(message);
+}
+
+function isLoginQuietMessage(message) {
+  return [t("authStatusCloudReady"), t("authStatusCloudRetry")].includes(message);
+}
+
+function setInlineStatus(statusNode, loaderNode, message, options = {}) {
+  if (!statusNode) {
+    return;
+  }
+
+  const { tone = "muted", loading = false, hidden = false } = options;
+  statusNode.textContent = message;
+  statusNode.dataset.tone = tone;
+  statusNode.dataset.loading = loading ? "true" : "false";
+  statusNode.classList.toggle("hidden", hidden);
+
+  if (loaderNode) {
+    loaderNode.classList.toggle("hidden", !loading || hidden);
+    loaderNode.setAttribute(
+      "aria-hidden",
+      loading && !hidden ? "false" : "true",
+    );
+  }
+}
+
+function setDailyStatus(message, options = {}) {
+  setInlineStatus(saveStatus, dailyStatusLoader, message, options);
+}
+
+function setMonthlyStatus(message, options = {}) {
+  setInlineStatus(monthlySaveStatus, monthlyStatusLoader, message, options);
+}
+
+function updateSyncBadge() {
+  const syncTextMap = {
+    cloud: t("syncCloud"),
+    local: t("syncLocal"),
+    syncing: t("syncSyncing"),
+    error: t("syncError"),
+  };
+
+  [
+    homeSyncBadge,
+    moduleSyncBadge,
+    monthlySyncBadge,
+    dailySyncBadge,
+  ].forEach((badge) => {
+    if (!badge) {
+      return;
+    }
+
+    badge.dataset.state = state.syncState;
+    badge.textContent = syncTextMap[state.syncState] || syncTextMap.local;
+  });
+}
+
+function setSyncState(nextState) {
+  state.syncState = nextState;
+  updateSyncBadge();
+}
+
+function setLoginStatus(message, tone = "muted") {
+  if (!loginStatusText) {
+    return;
+  }
+
+  const isQuiet = isLoginQuietMessage(message);
+  const showLoader = isLoginLoadingMessage(message);
+  setInlineStatus(loginStatusText, null, message, {
+    tone,
+    loading: showLoader,
+    hidden: isQuiet,
+  });
+  if (loginLoaderWrap) {
+    loginLoaderWrap.classList.toggle("hidden", !showLoader);
+    loginLoaderWrap.setAttribute(
+      "aria-hidden",
+      showLoader ? "false" : "true",
+    );
+  }
+  if (enterFacilitiesButton) {
+    enterFacilitiesButton.classList.toggle("hidden-for-loader", isLoginLoadingMessage(message));
+  }
+}
+
+function ensureVisibleScreen() {
+  const screens = [homeScreen, loginScreen, moduleScreen, monthlyScreen, appShell];
+  const hasVisibleScreen = screens.some(
+    (screen) => screen && !screen.classList.contains("hidden"),
+  );
+
+  if (!hasVisibleScreen) {
+    showLoginScreen();
+  }
+}
+
+function setFacilityDialogStatus(message = "", tone = "muted") {
+  if (!facilityDialogStatus) {
+    return;
+  }
+
+  facilityDialogStatus.textContent = message;
+  facilityDialogStatus.dataset.tone = tone;
+}
+
+function isSupabaseConfigured() {
+  return Boolean(
+    window.supabase?.createClient &&
+      SUPABASE_CONFIG.url &&
+      SUPABASE_CONFIG.anonKey,
+  );
+}
+
+function withTimeout(promise, timeoutMs = 4000) {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      reject(new Error("timeout"));
+    }, timeoutMs);
+
+    promise
+      .then((value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((error) => {
+        window.clearTimeout(timer);
+        reject(error);
+      });
+  });
+}
+
+function delay(ms) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+async function clearSupabaseSessionOnLoad() {
+  if (!isSupabaseConfigured()) {
+    return;
+  }
+
+  const bootClient = window.supabase.createClient(
+    SUPABASE_CONFIG.url,
+    SUPABASE_CONFIG.anonKey,
+    {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    },
+  );
+
+  try {
+    await bootClient.auth.signOut();
+  } catch {
+    // Ignore boot sign-out failures and continue to regular init.
+  }
+}
+
+function hasNonEmptyDailyEntries(entries) {
+  return Object.values(entries || {}).some((hourEntries) =>
+    Object.values(hourEntries || {}).some((value) => String(value || "").trim() !== ""),
+  );
+}
+
+function hasMonthlyEntries(entries) {
+  return Object.values(entries || {}).some(
+    (value) => String(value || "").trim() !== "",
+  );
+}
+
+function hasMonthlyPhotos(photos) {
+  return Object.keys(photos || {}).length > 0;
+}
+
+function getFileExtension(file) {
+  const explicitNameExtension = file.name?.split(".").pop()?.trim().toLowerCase();
+  if (explicitNameExtension && explicitNameExtension !== file.name?.toLowerCase()) {
+    return explicitNameExtension.replace(/[^a-z0-9]/g, "") || "jpg";
+  }
+
+  const mimeType = file.type || "";
+  if (mimeType.includes("png")) {
+    return "png";
+  }
+
+  if (mimeType.includes("webp")) {
+    return "webp";
+  }
+
+  return "jpg";
+}
+
+function buildMonthlyPhotoPath(fieldKey, file) {
+  const safeFieldKey = fieldKey.replace(/[^a-zA-Z0-9_-]/g, "-");
+  const extension = getFileExtension(file);
+  return [
+    state.selectedFacilityId || "facility",
+    state.selectedOperatorId || "operator",
+    state.monthlyPeriod || getCurrentMonth(),
+    `${safeFieldKey}-${Date.now()}.${extension}`,
+  ].join("/");
+}
+
+async function resolveMonthlyPhotoUrlAsync(photoValue) {
+  if (!photoValue) {
+    return "";
+  }
+
+  if (
+    String(photoValue).startsWith("data:") ||
+    String(photoValue).startsWith("blob:") ||
+    String(photoValue).startsWith("http://") ||
+    String(photoValue).startsWith("https://")
+  ) {
+    return photoValue;
+  }
+
+  if (monthlyPhotoUrlCache.has(photoValue)) {
+    return monthlyPhotoUrlCache.get(photoValue) || "";
+  }
+
+  if (!supabaseClient) {
+    return "";
+  }
+
+  const signedResult = await supabaseClient.storage
+    .from(MONTHLY_PHOTO_BUCKET)
+    .createSignedUrl(photoValue, 60 * 60);
+
+  if (!signedResult.error && signedResult.data?.signedUrl) {
+    monthlyPhotoUrlCache.set(photoValue, signedResult.data.signedUrl);
+    return signedResult.data.signedUrl;
+  }
+
+  return "";
+}
+
+async function uploadMonthlyPhotoToStorage(file, fieldKey) {
+  if (!state.supabaseEnabled || !state.sessionUser || !supabaseClient) {
+    return null;
+  }
+
+  const path = buildMonthlyPhotoPath(fieldKey, file);
+  const result = await supabaseClient.storage
+    .from(MONTHLY_PHOTO_BUCKET)
+    .upload(path, file, {
+      cacheControl: "3600",
+      upsert: true,
+    });
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  return path;
+}
+
+async function deleteMonthlyPhotoFromStorage(photoValue) {
+  if (
+    !photoValue ||
+    String(photoValue).startsWith("data:") ||
+    String(photoValue).startsWith("blob:") ||
+    String(photoValue).startsWith("http://") ||
+    String(photoValue).startsWith("https://")
+  ) {
+    return;
+  }
+
+  monthlyPhotoUrlCache.delete(photoValue);
+
+  if (!state.supabaseEnabled || !state.sessionUser || !supabaseClient) {
+    return;
+  }
+
+  const result = await supabaseClient.storage
+    .from(MONTHLY_PHOTO_BUCKET)
+    .remove([photoValue]);
+
+  if (result.error) {
+    throw result.error;
+  }
+}
+
+function saveMonthlyPhotoLocally(file, fieldKey) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      const photoData = typeof reader.result === "string" ? reader.result : "";
+      if (!photoData) {
+        reject(new Error("photo-read-failed"));
+        return;
+      }
+
+      state.monthlyPhotos[fieldKey] = photoData;
+      saveMonthlyPhotos();
+      applyMonthlyPhotoPreviews();
+      resolve(photoData);
+    });
+    reader.addEventListener("error", () => {
+      reject(new Error("photo-read-failed"));
+    });
+    reader.readAsDataURL(file);
+  });
+}
+
+function mergeDailyEntriesWithDefaults(source) {
+  const emptyEntries = createEmptyEntries();
+  for (const hour of HOURS) {
+    emptyEntries[hour] = {
+      ...emptyEntries[hour],
+      ...((source && source[hour]) || {}),
+    };
+  }
+  return emptyEntries;
+}
+
+async function persistDailySheetToSupabase(date, entries, skippedFields) {
+  if (
+    !state.supabaseEnabled ||
+    !state.sessionUser ||
+    !supabaseClient ||
+    !state.selectedFacilityId ||
+    !state.selectedOperatorId ||
+    !date
+  ) {
+    return;
+  }
+
+  const result = await supabaseClient.from("daily_logs").upsert(
+    {
+      facility_id: state.selectedFacilityId,
+      operator_id: state.selectedOperatorId,
+      log_date: date,
+      entries,
+      skipped_fields: skippedFields,
+      created_by: state.sessionUser.id,
+      updated_at: new Date().toISOString(),
+    },
+    {
+      onConflict: "facility_id,operator_id,log_date",
+    },
+  );
+
+  if (result.error) {
+    throw result.error;
+  }
+}
+
+function queueDailySheetSave() {
+  if (!state.date) {
+    return;
+  }
+
+  if (pendingDailySaveTimer) {
+    window.clearTimeout(pendingDailySaveTimer);
+  }
+
+  if (!state.supabaseEnabled || !state.sessionUser || !supabaseClient) {
+    return;
+  }
+
+  const date = state.date;
+  const entries = JSON.parse(JSON.stringify(state.entries));
+  const skippedFields = [...state.skippedFields];
+
+  setSyncState("syncing");
+  setDailyStatus(
+    state.language === "ar" ? "جاري مزامنة السجل اليومي..." : "Syncing daily log...",
+    { loading: true },
+  );
+
+  pendingDailySaveTimer = window.setTimeout(async () => {
+    pendingDailySaveTimer = null;
+    try {
+      await persistDailySheetToSupabase(date, entries, skippedFields);
+      setSyncState("cloud");
+      setDailyStatus(state.language === "ar" ? "تمت المزامنة" : "Synced", {
+        tone: "success",
+      });
+    } catch {
+      setSyncState("error");
+      setDailyStatus(
+        state.language === "ar" ? "فشلت مزامنة السجل اليومي" : "Daily sync failed",
+        { tone: "error" },
+      );
+    }
+  }, 450);
+}
+
+async function loadDailySheet(date) {
+  const localEntries = loadEntries(date);
+  const localSkippedFields = loadSkippedFields(date);
+
+  if (!state.supabaseEnabled || !state.sessionUser || !supabaseClient) {
+    return {
+      entries: localEntries,
+      skippedFields: localSkippedFields,
+    };
+  }
+
+  const result = await supabaseClient
+    .from("daily_logs")
+    .select("entries, skipped_fields")
+    .eq("facility_id", state.selectedFacilityId)
+    .eq("operator_id", state.selectedOperatorId)
+    .eq("log_date", date)
+    .maybeSingle();
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  if (result.data) {
+    const mergedEntries = mergeDailyEntriesWithDefaults(result.data.entries);
+    const mergedSkippedFields = Array.isArray(result.data.skipped_fields)
+      ? result.data.skipped_fields
+      : [];
+    localStorage.setItem(getStorageKey(date), JSON.stringify(mergedEntries));
+    localStorage.setItem(
+      getSkipStorageKey(date),
+      JSON.stringify(mergedSkippedFields),
+    );
+    return {
+      entries: mergedEntries,
+      skippedFields: mergedSkippedFields,
+    };
+  }
+
+  if (hasNonEmptyDailyEntries(localEntries) || localSkippedFields.length > 0) {
+    void persistDailySheetToSupabase(date, localEntries, localSkippedFields).catch(
+      () => {},
+    );
+  }
+
+  return {
+    entries: localEntries,
+    skippedFields: localSkippedFields,
+  };
+}
+
+async function persistMonthlyReadingToSupabase(period, entries, photos) {
+  if (
+    !state.supabaseEnabled ||
+    !state.sessionUser ||
+    !supabaseClient ||
+    !state.selectedFacilityId ||
+    !state.selectedOperatorId ||
+    !period
+  ) {
+    return;
+  }
+
+  const result = await supabaseClient.from("monthly_readings").upsert(
+    {
+      facility_id: state.selectedFacilityId,
+      operator_id: state.selectedOperatorId,
+      period,
+      entries,
+      photos,
+      created_by: state.sessionUser.id,
+      updated_at: new Date().toISOString(),
+    },
+    {
+      onConflict: "facility_id,operator_id,period",
+    },
+  );
+
+  if (result.error) {
+    throw result.error;
+  }
+}
+
+function queueMonthlyReadingSave() {
+  if (!state.monthlyPeriod) {
+    return;
+  }
+
+  if (pendingMonthlySaveTimer) {
+    window.clearTimeout(pendingMonthlySaveTimer);
+  }
+
+  if (!state.supabaseEnabled || !state.sessionUser || !supabaseClient) {
+    return;
+  }
+
+  const period = state.monthlyPeriod;
+  const entries = { ...state.monthlyEntries };
+  const photos = { ...state.monthlyPhotos };
+  setSyncState("syncing");
+  setMonthlyStatus(
+    state.language === "ar"
+      ? "جاري مزامنة القراءات الشهرية..."
+      : "Syncing monthly readings...",
+    { loading: true },
+  );
+
+  pendingMonthlySaveTimer = window.setTimeout(async () => {
+    pendingMonthlySaveTimer = null;
+    try {
+      await persistMonthlyReadingToSupabase(period, entries, photos);
+      setSyncState("cloud");
+      setMonthlyStatus(state.language === "ar" ? "تمت المزامنة" : "Synced", {
+        tone: "success",
+      });
+    } catch {
+      setSyncState("error");
+      setMonthlyStatus(
+        state.language === "ar"
+          ? "فشلت مزامنة القراءات الشهرية"
+          : "Monthly sync failed",
+        { tone: "error" },
+      );
+    }
+  }, 450);
+}
+
+async function loadMonthlyReading(period) {
+  const localEntries = loadMonthlyEntriesForCurrentSelection();
+  const localPhotos = loadMonthlyPhotosForCurrentSelection();
+
+  if (!state.supabaseEnabled || !state.sessionUser || !supabaseClient) {
+    return {
+      entries: localEntries,
+      photos: localPhotos,
+    };
+  }
+
+  const result = await supabaseClient
+    .from("monthly_readings")
+    .select("entries, photos")
+    .eq("facility_id", state.selectedFacilityId)
+    .eq("operator_id", state.selectedOperatorId)
+    .eq("period", period)
+    .maybeSingle();
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  if (result.data) {
+    const entries = result.data.entries && typeof result.data.entries === "object"
+      ? result.data.entries
+      : {};
+    const photos = result.data.photos && typeof result.data.photos === "object"
+      ? result.data.photos
+      : {};
+
+    const allEntries = loadAllMonthlyEntries();
+    allEntries[getMonthlyStorageBucketKey()] = entries;
+    localStorage.setItem(MONTHLY_STORAGE_KEY, JSON.stringify(allEntries));
+
+    const allPhotos = loadAllMonthlyPhotos();
+    allPhotos[getMonthlyStorageBucketKey()] = photos;
+    localStorage.setItem(MONTHLY_PHOTO_STORAGE_KEY, JSON.stringify(allPhotos));
+
+    return { entries, photos };
+  }
+
+  if (hasMonthlyEntries(localEntries) || hasMonthlyPhotos(localPhotos)) {
+    void persistMonthlyReadingToSupabase(period, localEntries, localPhotos).catch(
+      () => {},
+    );
+  }
+
+  return {
+    entries: localEntries,
+    photos: localPhotos,
+  };
+}
+
+function useLocalFacilitiesSnapshot() {
+  state.facilities = loadFacilities();
+  renderFacilities();
+}
+
+async function hydrateFacilitiesFromSupabase() {
+  if (!state.supabaseEnabled || !state.sessionUser || !supabaseClient) {
+    return;
+  }
+
+  setLoginStatus(t("authStatusSyncing"));
+
+  const facilitiesResult = await supabaseClient
+    .from("facilities")
+    .select("id, name, created_at")
+    .order("created_at", { ascending: true });
+
+  if (facilitiesResult.error) {
+    throw facilitiesResult.error;
+  }
+
+  const facilityIds = (facilitiesResult.data || []).map((item) => item.id);
+  if (facilityIds.length === 0) {
+    state.facilities = [];
+    saveFacilities();
+    renderFacilities();
+    setLoginStatus(
+      `${t("authStatusSignedInAs")} ${state.sessionUser.email || ""}`.trim(),
+      "success",
+    );
+    return;
+  }
+
+  const operatorsResult = await supabaseClient
+    .from("operators")
+    .select("id, facility_id, name, created_at")
+    .in("facility_id", facilityIds)
+    .order("created_at", { ascending: true });
+
+  if (operatorsResult.error) {
+    throw operatorsResult.error;
+  }
+
+  const operatorsByFacility = new Map();
+  (operatorsResult.data || []).forEach((operator) => {
+    const list = operatorsByFacility.get(operator.facility_id) || [];
+    list.push({
+      id: operator.id,
+      name: operator.name,
+    });
+    operatorsByFacility.set(operator.facility_id, list);
+  });
+
+  state.facilities = (facilitiesResult.data || []).map((facility) => ({
+    id: facility.id,
+    name: facility.name,
+    operators: operatorsByFacility.get(facility.id) || [],
+  }));
+
+  if (
+    state.selectedFacilityId &&
+    !state.facilities.some((facility) => facility.id === state.selectedFacilityId)
+  ) {
+    state.selectedFacilityId = "";
+    state.selectedOperatorId = "";
+  }
+
+  if (state.selectedFacilityId && state.selectedOperatorId) {
+    const selectedFacility = state.facilities.find(
+      (facility) => facility.id === state.selectedFacilityId,
+    );
+    const operatorStillExists = selectedFacility?.operators?.some(
+      (operator) => operator.id === state.selectedOperatorId,
+    );
+    if (!operatorStillExists) {
+      state.selectedOperatorId = "";
+    }
+  }
+
+  saveFacilities();
+  renderFacilities();
+}
+
+async function ensureProfileRecord() {
+  if (!state.supabaseEnabled || !state.sessionUser || !supabaseClient) {
+    return;
+  }
+
+  const result = await supabaseClient.from("profiles").upsert(
+    {
+      id: state.sessionUser.id,
+      email: state.sessionUser.email || "",
+    },
+    {
+      onConflict: "id",
+    },
+  );
+
+  if (result.error) {
+    throw result.error;
+  }
+}
+
+async function syncFacilitiesAfterAuth(options = {}) {
+  const attempts = options.attempts || 3;
+  const timeoutMs = options.timeoutMs || 10000;
+  let lastError = null;
+
+  setSyncState("syncing");
+  for (let index = 0; index < attempts; index += 1) {
+    try {
+      await withTimeout(ensureProfileRecord(), timeoutMs);
+      await withTimeout(hydrateFacilitiesFromSupabase(), timeoutMs);
+      setSyncState("cloud");
+      return;
+    } catch (error) {
+      lastError = error;
+      if (index < attempts - 1) {
+        await delay(450);
+      }
+    }
+  }
+
+  throw lastError || new Error("facility-sync-failed");
+}
+
+async function initializeSupabase() {
+  if (!isSupabaseConfigured()) {
+    state.supabaseEnabled = false;
+    setSyncState("local");
+    setLoginStatus(t("authStatusLocalMode"));
+    useLocalFacilitiesSnapshot();
+    showLoginScreen();
+    return;
+  }
+
+  try {
+    supabaseClient = window.supabase.createClient(
+      SUPABASE_CONFIG.url,
+      SUPABASE_CONFIG.anonKey,
+      {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+        },
+      },
+    );
+    state.supabaseEnabled = true;
+    setSyncState("syncing");
+    setLoginStatus(t("authStatusChecking"));
+
+    supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+      state.sessionUser = session?.user || null;
+
+      if (suppressAuthRedirect) {
+        return;
+      }
+
+      if (state.sessionUser) {
+        try {
+          await syncFacilitiesAfterAuth();
+          setLoginStatus(
+            `${t("authStatusSignedInAs")} ${state.sessionUser.email || ""}`.trim(),
+            "success",
+          );
+          if (loginScreen && !loginScreen.classList.contains("hidden")) {
+            showHomeScreen();
+          }
+        } catch {
+          setSyncState("error");
+          setLoginStatus(t("authStatusCloudRetry"));
+          useLocalFacilitiesSnapshot();
+        }
+        return;
+      }
+
+      state.facilities = [];
+      renderFacilities();
+      setSyncState("cloud");
+      setLoginStatus(t("authStatusSignedOut"));
+      showLoginScreen();
+    });
+
+    const {
+      data: { session },
+      error,
+    } = await supabaseClient.auth.getSession();
+
+    if (error) {
+      throw error;
+    }
+
+    state.sessionUser = session?.user || null;
+
+    if (state.sessionUser) {
+      await syncFacilitiesAfterAuth();
+      setLoginStatus(
+        `${t("authStatusSignedInAs")} ${state.sessionUser.email || ""}`.trim(),
+        "success",
+      );
+      showHomeScreen();
+      return;
+    }
+
+    setSyncState("cloud");
+    setLoginStatus(t("authStatusCloudReady"));
+    showLoginScreen();
+  } catch {
+    state.supabaseEnabled = false;
+    supabaseClient = null;
+    setSyncState(isSupabaseConfigured() ? "error" : "local");
+    setLoginStatus(
+      isSupabaseConfigured() ? t("authStatusCloudRetry") : t("authStatusCloudError"),
+      isSupabaseConfigured() ? "muted" : "error",
+    );
+    useLocalFacilitiesSnapshot();
+    showLoginScreen();
+  }
+}
+
+async function createFacilityRecord(name) {
+  if (!state.supabaseEnabled || !state.sessionUser || !supabaseClient) {
+      state.facilities.push({
+        id: createId("facility"),
+        name,
+        operators: [],
+      });
+    saveFacilities();
+    renderFacilities();
+    return;
+  }
+
+  const facilityResult = await supabaseClient.rpc(
+    "create_facility_with_membership",
+    {
+      facility_name: name,
+    },
+  );
+
+  if (facilityResult.error) {
+    throw facilityResult.error;
+  }
+
+  await hydrateFacilitiesFromSupabase();
+}
+
+async function deleteFacilityRecord(facilityId) {
+  if (!state.supabaseEnabled || !supabaseClient) {
+    state.facilities = state.facilities.filter((item) => item.id !== facilityId);
+    saveFacilities();
+    renderFacilities();
+    return;
+  }
+
+  const result = await supabaseClient.from("facilities").delete().eq("id", facilityId);
+  if (result.error) {
+    throw result.error;
+  }
+
+  await hydrateFacilitiesFromSupabase();
+}
+
+async function createOperatorRecord(facilityId, name) {
+  if (!state.supabaseEnabled || !supabaseClient) {
+    const facility = state.facilities.find((item) => item.id === facilityId);
+    if (!facility) {
+      return;
+    }
+
+    facility.operators.push({
+      id: createId("operator"),
+      name,
+    });
+    saveFacilities();
+    renderFacilities();
+    return;
+  }
+
+  const result = await supabaseClient.from("operators").insert({
+    facility_id: facilityId,
+    name,
+  });
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  await hydrateFacilitiesFromSupabase();
+}
+
+async function updateFacilityRecord(facilityId, nextName, nextOperators) {
+  if (!state.supabaseEnabled || !supabaseClient) {
+    const facility = state.facilities.find((item) => item.id === facilityId);
+    if (!facility) {
+      return;
+    }
+
+    facility.name = nextName;
+    facility.operators = nextOperators;
+    saveFacilities();
+    renderFacilities();
+    return;
+  }
+
+  const currentFacility = state.facilities.find((item) => item.id === facilityId);
+  const currentOperators = currentFacility?.operators || [];
+  const nextOperatorIds = new Set(nextOperators.map((operator) => operator.id));
+  const removedOperatorIds = currentOperators
+    .filter((operator) => !nextOperatorIds.has(operator.id))
+    .map((operator) => operator.id);
+
+  const facilityUpdate = await supabaseClient
+    .from("facilities")
+    .update({ name: nextName })
+    .eq("id", facilityId);
+
+  if (facilityUpdate.error) {
+    throw facilityUpdate.error;
+  }
+
+  if (removedOperatorIds.length > 0) {
+    const deleteResult = await supabaseClient
+      .from("operators")
+      .delete()
+      .in("id", removedOperatorIds);
+    if (deleteResult.error) {
+      throw deleteResult.error;
+    }
+  }
+
+  const existingOperators = nextOperators.filter(
+    (operator) => !String(operator.id).startsWith("operator-"),
+  );
+  for (const operator of existingOperators) {
+    const updateResult = await supabaseClient
+      .from("operators")
+      .update({ name: operator.name })
+      .eq("id", operator.id);
+    if (updateResult.error) {
+      throw updateResult.error;
+    }
+  }
+
+  const newOperators = nextOperators.filter((operator) =>
+    String(operator.id).startsWith("operator-"),
+  );
+  if (newOperators.length > 0) {
+    const insertResult = await supabaseClient.from("operators").insert(
+      newOperators.map((operator) => ({
+        facility_id: facilityId,
+        name: operator.name,
+      })),
+    );
+    if (insertResult.error) {
+      throw insertResult.error;
+    }
+  }
+
+  await hydrateFacilitiesFromSupabase();
+}
+
+async function signInWithSupabase(email, password) {
+  if (!state.supabaseEnabled || !supabaseClient) {
+    showHomeScreen();
+    return true;
+  }
+
+  loginTransitionBusy = true;
+  setLoginStatus(t("authStatusSigningIn"));
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    loginTransitionBusy = false;
+    setLoginStatus(t("authStatusSignInFailed"), "error");
+    return false;
+  }
+
+  const {
+    data: { session },
+  } = await supabaseClient.auth.getSession();
+  state.sessionUser = session?.user || null;
+  try {
+    await syncFacilitiesAfterAuth();
+  } catch {
+    useLocalFacilitiesSnapshot();
+    setLoginStatus(
+      `${t("authStatusSignedInAs")} ${state.sessionUser?.email || email}`.trim(),
+      "success",
+    );
+  }
+  loginTransitionBusy = false;
+  showHomeScreen();
+  return true;
+}
+
+async function signOutFromSupabase() {
+  if (!state.supabaseEnabled || !supabaseClient) {
+    showLoginScreen();
+    return;
+  }
+
+  suppressAuthRedirect = true;
+  await supabaseClient.auth.signOut();
+  suppressAuthRedirect = false;
+  loginTransitionBusy = false;
+  state.sessionUser = null;
+  state.selectedFacilityId = "";
+  state.selectedOperatorId = "";
+  state.facilities = [];
+  renderFacilities();
+  setLoginStatus(t("authStatusSignedOut"));
+  showLoginScreen();
 }
 
 function loadSettings() {
@@ -560,8 +1640,18 @@ function loadSettings() {
   }
 }
 
+function getFacilitiesStorageKey() {
+  if (state.sessionUser?.id) {
+    return `${FACILITIES_STORAGE_KEY}__${state.sessionUser.id}`;
+  }
+
+  return `${FACILITIES_STORAGE_KEY}__local`;
+}
+
 function loadFacilities() {
-  const saved = localStorage.getItem(FACILITIES_STORAGE_KEY);
+  const saved =
+    localStorage.getItem(getFacilitiesStorageKey()) ||
+    (!state.sessionUser ? localStorage.getItem(FACILITIES_STORAGE_KEY) : null);
   if (!saved) {
     return [];
   }
@@ -599,7 +1689,7 @@ function loadFacilities() {
 
 function saveFacilities() {
   localStorage.setItem(
-    FACILITIES_STORAGE_KEY,
+    getFacilitiesStorageKey(),
     JSON.stringify(state.facilities),
   );
 }
@@ -630,6 +1720,7 @@ function renderFacilities() {
 
     const title = document.createElement("h3");
     title.textContent = facility.name;
+    header.append(title);
 
     const addOperatorButton = document.createElement("button");
     addOperatorButton.type = "button";
@@ -646,8 +1737,7 @@ function renderFacilities() {
     const actionGroup = document.createElement("div");
     actionGroup.className = "facility-card-actions";
     actionGroup.append(addOperatorButton, editFacilityButton);
-
-    header.append(title, actionGroup);
+    header.append(actionGroup);
 
     const operatorsTitle = document.createElement("p");
     operatorsTitle.className = "facility-subtitle";
@@ -684,7 +1774,7 @@ function renderFacilities() {
   });
 }
 
-function openFacilityEditor(facilityId) {
+async function openFacilityEditor(facilityId) {
   const facility = state.facilities.find((item) => item.id === facilityId);
   if (!facility) {
     return;
@@ -793,7 +1883,7 @@ function selectOperator(facilityId, operatorId) {
   renderFacilities();
 }
 
-function openSelectedOperatorSheet() {
+async function openSelectedOperatorSheet() {
   if (!state.selectedFacilityId || !state.selectedOperatorId) {
     return;
   }
@@ -802,7 +1892,7 @@ function openSelectedOperatorSheet() {
   const initialDate = getToday();
   sheetDateInput.value = initialDate;
   startHourSelect.value = "0";
-  openSheet(initialDate, 0);
+  await openSheet(initialDate, 0);
 }
 
 function saveSettings() {
@@ -882,13 +1972,32 @@ function applyLanguage() {
   monthlyExportImageButton.textContent =
     state.language === "ar" ? "تصدير صورة" : "Export Photo";
   loginTitle.textContent =
-    state.language === "ar" ? "سجل تشغيل المنظومة الكهربائية" : "Electricity Operations Log";
-  loginUsernameText.textContent =
-    state.language === "ar" ? "اسم المستخدم" : t("username");
-  loginPasswordText.textContent =
-    state.language === "ar" ? "كلمة المرور" : t("password");
-  enterFacilitiesButton.textContent =
-    state.language === "ar" ? "دخول" : t("enter");
+    state.language === "ar"
+      ? "سجل تشغيل المنظومة الكهربائية"
+      : "Electricity Operations Log";
+  updateSyncBadge();
+  loginUsernameText.textContent = t("username");
+  loginPasswordText.textContent = t("password");
+  enterFacilitiesButton.textContent = t("enter");
+  if (state.supabaseEnabled) {
+    const currentStatus = loginStatusText?.textContent?.trim() || "";
+    const shouldPreserveBootStatus =
+      !state.sessionUser &&
+      (currentStatus === t("authStatusConnecting") ||
+        currentStatus === t("authStatusChecking") ||
+        currentStatus === t("authStatusSigningIn"));
+
+    if (!shouldPreserveBootStatus) {
+      setLoginStatus(
+        state.sessionUser
+          ? `${t("authStatusSignedInAs")} ${state.sessionUser.email || ""}`.trim()
+          : t("authStatusCloudReady"),
+        state.sessionUser ? "success" : "muted",
+      );
+    }
+  } else if (!isSupabaseConfigured()) {
+    setLoginStatus(t("authStatusLocalMode"));
+  }
   sheetDateText.textContent = t("sheetDate");
   activeHourText.textContent = t("activeHour");
   currentFieldText.textContent = t("currentField");
@@ -911,6 +2020,11 @@ function applyLanguage() {
   settingsChangeDateButton.textContent = t("changeDate");
   settingsResetSheetButton.textContent = t("resetSheet");
   settingsSkipSpotsButton.textContent = t("skipSpots");
+  replaceMonthlyPhotoButton.textContent =
+    state.language === "ar" ? "استبدال الصورة" : "Replace Photo";
+  deleteMonthlyPhotoButton.textContent =
+    state.language === "ar" ? "حذف الصورة" : "Delete Photo";
+  closeMonthlyPhotoPreviewButton.textContent = t("close");
   fieldValueInput.placeholder = t("valuePlaceholder");
   fastInputValue.placeholder = t("valuePlaceholder");
   facilityDialog.querySelector("h2").textContent = t("addFacility");
@@ -1149,8 +2263,13 @@ function saveMonthlyEntries() {
   const allEntries = loadAllMonthlyEntries();
   allEntries[getMonthlyStorageBucketKey()] = state.monthlyEntries;
   localStorage.setItem(MONTHLY_STORAGE_KEY, JSON.stringify(allEntries));
-  monthlySaveStatus.textContent =
-    state.language === "ar" ? "تم حفظ القراءات الشهرية" : "Monthly readings saved";
+  if (state.supabaseEnabled && state.sessionUser && supabaseClient) {
+    queueMonthlyReadingSave();
+  } else {
+    setMonthlyStatus(
+      state.language === "ar" ? "تم حفظ القراءات الشهرية" : "Monthly readings saved",
+    );
+  }
 }
 
 function loadMonthlyPhotosForCurrentSelection() {
@@ -1162,10 +2281,13 @@ function saveMonthlyPhotos() {
   const allPhotos = loadAllMonthlyPhotos();
   allPhotos[getMonthlyStorageBucketKey()] = state.monthlyPhotos;
   localStorage.setItem(MONTHLY_PHOTO_STORAGE_KEY, JSON.stringify(allPhotos));
-  monthlySaveStatus.textContent =
-    state.language === "ar"
-      ? "تم حفظ صورة الحقل"
-      : "Field photo saved";
+  if (state.supabaseEnabled && state.sessionUser && supabaseClient) {
+    queueMonthlyReadingSave();
+  } else {
+    setMonthlyStatus(
+      state.language === "ar" ? "تم حفظ صورة الحقل" : "Field photo saved",
+    );
+  }
 }
 
 function formatMonthlyPeriodLabel() {
@@ -1187,9 +2309,6 @@ function createMonthlyInput(fieldKey, options = {}) {
   input.type = "text";
   input.className = "monthly-cell-input";
   input.dataset.monthlyField = fieldKey;
-  if (isMonthlyNextReadingField(fieldKey)) {
-    input.dataset.photoField = fieldKey;
-  }
 
   if (options.numeric) {
     input.inputMode = "decimal";
@@ -1201,7 +2320,23 @@ function createMonthlyInput(fieldKey, options = {}) {
 
 function createMonthlyInputCell(fieldKey, options = {}) {
   const cell = document.createElement("td");
-  cell.append(createMonthlyInput(fieldKey, options));
+  const wrapper = document.createElement("div");
+  wrapper.className = "monthly-cell-wrap";
+
+  const input = createMonthlyInput(fieldKey, options);
+  wrapper.append(input);
+
+  if (isMonthlyNextReadingField(fieldKey)) {
+    const photoButton = document.createElement("button");
+    photoButton.type = "button";
+    photoButton.className = "monthly-photo-button";
+    photoButton.dataset.photoField = fieldKey;
+    photoButton.setAttribute("aria-label", "Field photo");
+    photoButton.setAttribute("title", "Field photo");
+    wrapper.append(photoButton);
+  }
+
+  cell.append(wrapper);
   return cell;
 }
 
@@ -1524,25 +2659,32 @@ function populateMonthlyInputs() {
 
 function applyMonthlyPhotoPreviews() {
   const photoFields = Array.from(
-    monthlyPages.querySelectorAll("[data-photo-field]"),
+    monthlyPages.querySelectorAll(".monthly-photo-button[data-photo-field]"),
   );
 
   photoFields.forEach((field, index) => {
     const photo = state.monthlyPhotos[field.dataset.photoField];
-    const showDemoIndicator = index === 0;
+    field.classList.toggle("photo-indicated", Boolean(photo));
+    field.classList.remove("photo-attached");
+    field.style.removeProperty("--monthly-photo");
 
-    field.classList.toggle("photo-indicated", Boolean(photo) || showDemoIndicator);
-    if (photo) {
-      field.classList.add("photo-attached");
-      field.style.setProperty(
-        "--monthly-photo",
-        `linear-gradient(rgba(17, 17, 17, 0.28), rgba(17, 17, 17, 0.28)), url("${photo}")`,
-      );
+    if (!photo) {
       return;
     }
 
-    field.classList.remove("photo-attached");
-    field.style.removeProperty("--monthly-photo");
+    void resolveMonthlyPhotoUrlAsync(photo).then((photoUrl) => {
+      if (!photoUrl) {
+        return;
+      }
+
+      const currentValue = state.monthlyPhotos[field.dataset.photoField];
+      if (currentValue !== photo) {
+        return;
+      }
+
+      field.classList.add("photo-attached");
+      field.dataset.photoPreviewUrl = photoUrl;
+    });
   });
 }
 
@@ -1577,18 +2719,48 @@ function updateMonthlyHeader() {
   }
 }
 
-function openMonthlyReadingsScreen() {
+async function openMonthlyReadingsScreen() {
   if (!state.selectedFacilityId || !state.selectedOperatorId) {
     return;
   }
 
   state.monthlyPeriod =
     monthlyMonthInput.value || state.monthlyPeriod || getCurrentMonth();
-  state.monthlyEntries = loadMonthlyEntriesForCurrentSelection();
-  state.monthlyPhotos = loadMonthlyPhotosForCurrentSelection();
-  renderMonthlyReadingsSheet();
-  monthlySaveStatus.textContent = t("ready");
+  monthlyPages.innerHTML = "";
   showMonthlyScreen();
+  if (state.supabaseEnabled && state.sessionUser && supabaseClient) {
+    setSyncState("syncing");
+  }
+  setMonthlyStatus(
+    state.language === "ar"
+      ? "جاري تحميل القراءات الشهرية..."
+      : "Loading monthly readings...",
+    { loading: true },
+  );
+  let loadFailed = false;
+  try {
+    const monthlyReading = await loadMonthlyReading(state.monthlyPeriod);
+    state.monthlyEntries = monthlyReading.entries;
+    state.monthlyPhotos = monthlyReading.photos;
+  } catch {
+    loadFailed = true;
+    if (state.supabaseEnabled && state.sessionUser && supabaseClient) {
+      setSyncState("error");
+    }
+    state.monthlyEntries = loadMonthlyEntriesForCurrentSelection();
+    state.monthlyPhotos = loadMonthlyPhotosForCurrentSelection();
+    setMonthlyStatus(
+      state.language === "ar" ? "فشلت مزامنة القراءات الشهرية" : "Monthly sync failed",
+      { tone: "error" },
+    );
+  }
+  renderMonthlyReadingsSheet();
+  if (!loadFailed) {
+    if (state.supabaseEnabled && state.sessionUser && supabaseClient) {
+      setSyncState("cloud");
+    }
+    setMonthlyStatus(t("ready"));
+  }
 }
 
 function createEmptyEntries() {
@@ -1610,12 +2782,20 @@ function populateHourOptions() {
   });
 }
 
+function getDailyStorageBucketKey(date) {
+  return [
+    state.selectedFacilityId || "facility",
+    state.selectedOperatorId || "operator",
+    date || state.date || getToday(),
+  ].join("__");
+}
+
 function getStorageKey(date) {
-  return `${STORAGE_PREFIX}-${date}`;
+  return `${STORAGE_PREFIX}-${getDailyStorageBucketKey(date)}`;
 }
 
 function getSkipStorageKey(date) {
-  return `${STORAGE_PREFIX}-skips-${date}`;
+  return `${STORAGE_PREFIX}-skips-${getDailyStorageBucketKey(date)}`;
 }
 
 function saveEntries() {
@@ -1627,7 +2807,11 @@ function saveEntries() {
     getStorageKey(state.date),
     JSON.stringify(state.entries),
   );
-  saveStatus.textContent = "Saved";
+  if (state.supabaseEnabled && state.sessionUser && supabaseClient) {
+    queueDailySheetSave();
+  } else {
+    setDailyStatus(state.language === "ar" ? "تم حفظ السجل اليومي" : "Daily log saved");
+  }
 }
 
 function loadEntries(date) {
@@ -1675,6 +2859,7 @@ function saveSkippedFields() {
     getSkipStorageKey(state.date),
     JSON.stringify(state.skippedFields),
   );
+  queueDailySheetSave();
 }
 
 function loadHeaderOverrides() {
@@ -2078,7 +3263,7 @@ async function downloadMonthlyPagesAsImage() {
 
 async function shareSheetFile() {
   if (!state.date) {
-    saveStatus.textContent = "Choose a date first";
+    setDailyStatus("Choose a date first", { tone: "muted" });
     return;
   }
 
@@ -2086,11 +3271,19 @@ async function shareSheetFile() {
 
   if (!navigator.share) {
     downloadExcelFile();
-    saveStatus.textContent = "Share not supported, downloaded instead";
+    setDailyStatus("Share not supported, downloaded instead", {
+      tone: "muted",
+    });
     return;
   }
 
   try {
+    setDailyStatus(
+      state.language === "ar"
+        ? "جاري تجهيز مشاركة السجل..."
+        : "Preparing sheet share...",
+      { loading: true },
+    );
     const shareData = {
       title: "Daily Operation Log Sheet",
       text: `Daily sheet for ${state.date}`,
@@ -2099,19 +3292,21 @@ async function shareSheetFile() {
 
     if (navigator.canShare && !navigator.canShare(shareData)) {
       downloadExcelFile();
-      saveStatus.textContent = "File share not supported, downloaded instead";
+      setDailyStatus("File share not supported, downloaded instead", {
+        tone: "muted",
+      });
       return;
     }
 
     await navigator.share(shareData);
-    saveStatus.textContent = "Sheet shared";
+    setDailyStatus("Sheet shared", { tone: "success" });
   } catch (error) {
     if (error && error.name === "AbortError") {
       return;
     }
 
     downloadExcelFile();
-    saveStatus.textContent = "Share failed, downloaded instead";
+    setDailyStatus("Share failed, downloaded instead", { tone: "error" });
   }
 }
 
@@ -2884,11 +4079,38 @@ function refreshUi() {
   updateFastInputPanel();
 }
 
-function openSheet(date, hourIndex) {
+async function openSheet(date, hourIndex) {
   state.date = date;
-  state.entries = loadEntries(date);
-  state.skippedFields = loadSkippedFields(date);
-  saveStatus.textContent = t("ready");
+  if (state.supabaseEnabled && state.sessionUser && supabaseClient) {
+    setSyncState("syncing");
+  }
+  setDailyStatus(
+    state.language === "ar" ? "جاري تحميل السجل اليومي..." : "Loading daily log...",
+    { loading: true },
+  );
+  let loadFailed = false;
+  try {
+    const dailySheet = await loadDailySheet(date);
+    state.entries = dailySheet.entries;
+    state.skippedFields = dailySheet.skippedFields;
+  } catch {
+    loadFailed = true;
+    if (state.supabaseEnabled && state.sessionUser && supabaseClient) {
+      setSyncState("error");
+    }
+    state.entries = loadEntries(date);
+    state.skippedFields = loadSkippedFields(date);
+    setDailyStatus(
+      state.language === "ar" ? "فشلت مزامنة السجل اليومي" : "Daily sync failed",
+      { tone: "error" },
+    );
+  }
+  if (!loadFailed) {
+    if (state.supabaseEnabled && state.sessionUser && supabaseClient) {
+      setSyncState("cloud");
+    }
+    setDailyStatus(t("ready"));
+  }
   setActiveHour(hourIndex);
 }
 
@@ -3011,6 +4233,7 @@ function resetSheet() {
 
 openFacilityDialogButton.addEventListener("click", () => {
   facilityNameInput.value = "";
+  setFacilityDialogStatus("");
   facilityDialog.showModal();
   window.setTimeout(() => {
     facilityNameInput.focus();
@@ -3024,8 +4247,8 @@ homeLanguageButton.addEventListener("click", () => {
   refreshUi();
 });
 
-homeBackButton.addEventListener("click", () => {
-  showLoginScreen();
+homeBackButton.addEventListener("click", async () => {
+  await signOutFromSupabase();
 });
 
 loginLanguageButton.addEventListener("click", () => {
@@ -3061,19 +4284,21 @@ homeNextButton.addEventListener("click", () => {
   showModuleScreen();
 });
 
-gatewayButton.addEventListener("click", () => {
-  openSelectedOperatorSheet();
+gatewayButton.addEventListener("click", async () => {
+  await openSelectedOperatorSheet();
 });
 
 attendanceButton.addEventListener("click", () => {
-  saveStatus.textContent =
+  setDailyStatus(
     state.language === "ar"
       ? "قسم الحضور قادم لاحقاً"
-      : "Attendance is coming soon";
+      : "Attendance is coming soon",
+    { tone: "muted" },
+  );
 });
 
-monthlyReadingsButton.addEventListener("click", () => {
-  openMonthlyReadingsScreen();
+monthlyReadingsButton.addEventListener("click", async () => {
+  await openMonthlyReadingsScreen();
 });
 
 monthlyBackButton.addEventListener("click", () => {
@@ -3084,37 +4309,82 @@ monthlyCameraButton.addEventListener("click", () => {
   state.monthlyCameraMode = !state.monthlyCameraMode;
   state.pendingMonthlyPhotoField = "";
   updateMonthlyHeader();
-  monthlySaveStatus.textContent =
+  setMonthlyStatus(
     state.language === "ar"
       ? state.monthlyCameraMode
         ? "اضغط على أي حقل شهري لفتح الكاميرا"
         : "تم إيقاف وضع الكاميرا"
       : state.monthlyCameraMode
         ? "Tap a monthly field to open the camera"
-        : "Camera mode turned off";
+        : "Camera mode turned off",
+  );
 });
 
-monthlyMonthInput.addEventListener("change", () => {
+monthlyMonthInput.addEventListener("change", async () => {
   state.monthlyPeriod = monthlyMonthInput.value || getCurrentMonth();
-  state.monthlyEntries = loadMonthlyEntriesForCurrentSelection();
-  state.monthlyPhotos = loadMonthlyPhotosForCurrentSelection();
+  setMonthlyStatus(
+    state.language === "ar"
+      ? "جاري تحميل القراءات الشهرية..."
+      : "Loading monthly readings...",
+    { loading: true },
+  );
+  let loadFailed = false;
+  try {
+    const monthlyReading = await loadMonthlyReading(state.monthlyPeriod);
+    state.monthlyEntries = monthlyReading.entries;
+    state.monthlyPhotos = monthlyReading.photos;
+  } catch {
+    loadFailed = true;
+    state.monthlyEntries = loadMonthlyEntriesForCurrentSelection();
+    state.monthlyPhotos = loadMonthlyPhotosForCurrentSelection();
+    setMonthlyStatus(
+      state.language === "ar" ? "فشلت مزامنة القراءات الشهرية" : "Monthly sync failed",
+      { tone: "error" },
+    );
+  }
   populateMonthlyInputs();
   updateMonthlyHeader();
-  monthlySaveStatus.textContent = t("ready");
+  if (!loadFailed) {
+    setMonthlyStatus(t("ready"));
+  }
 });
 
 monthlyScreen.addEventListener("click", (event) => {
+  const photoButton = event.target.closest(".monthly-photo-button[data-photo-field]");
+  if (photoButton) {
+    if (state.monthlyCameraMode) {
+      event.preventDefault();
+      state.pendingMonthlyPhotoField = photoButton.dataset.photoField;
+      monthlyCameraInput.value = "";
+      monthlyCameraInput.click();
+      return;
+    }
+
+    const previewUrl = photoButton.dataset.photoPreviewUrl || "";
+    if (!previewUrl) {
+      return;
+    }
+
+    event.preventDefault();
+    activeMonthlyPreviewField = photoButton.dataset.photoField || "";
+    monthlyPhotoPreviewImage.src = previewUrl;
+    monthlyPhotoPreviewDialog.showModal();
+    return;
+  }
+
   if (!state.monthlyCameraMode) {
     return;
   }
 
-  const target = event.target.closest(".monthly-cell-input");
-  if (!target || !target.dataset.photoField) {
+  const monthlyFieldInput = event.target.closest(".monthly-cell-input[data-monthly-field]");
+  const fieldKey = monthlyFieldInput?.dataset.monthlyField || "";
+  if (!fieldKey || !isMonthlyNextReadingField(fieldKey)) {
     return;
   }
 
   event.preventDefault();
-  state.pendingMonthlyPhotoField = target.dataset.photoField;
+  monthlyFieldInput.blur();
+  state.pendingMonthlyPhotoField = fieldKey;
   monthlyCameraInput.value = "";
   monthlyCameraInput.click();
 });
@@ -3137,7 +4407,7 @@ monthlyScreen.addEventListener("input", (event) => {
   saveMonthlyEntries();
 });
 
-monthlyCameraInput.addEventListener("change", () => {
+monthlyCameraInput.addEventListener("change", async () => {
   const file = monthlyCameraInput.files?.[0];
   const fieldKey = state.pendingMonthlyPhotoField;
   state.pendingMonthlyPhotoField = "";
@@ -3146,28 +4416,61 @@ monthlyCameraInput.addEventListener("change", () => {
     return;
   }
 
-  const reader = new FileReader();
-  reader.addEventListener("load", () => {
-    const photoData = typeof reader.result === "string" ? reader.result : "";
-    if (!photoData) {
+  setMonthlyStatus(
+    state.language === "ar" ? "جاري حفظ الصورة..." : "Saving photo...",
+    { loading: true },
+  );
+  const previousPhotoValue = state.monthlyPhotos[fieldKey] || "";
+
+  try {
+    const storagePath = await uploadMonthlyPhotoToStorage(file, fieldKey);
+    if (storagePath) {
+      state.monthlyPhotos[fieldKey] = storagePath;
+      saveMonthlyPhotos();
+      applyMonthlyPhotoPreviews();
+      if (previousPhotoValue && previousPhotoValue !== storagePath) {
+        void deleteMonthlyPhotoFromStorage(previousPhotoValue).catch(() => {});
+      }
       return;
     }
+  } catch {
+    if (state.supabaseEnabled) {
+      setMonthlyStatus(
+        state.language === "ar"
+          ? "فشل رفع الصورة إلى السحابة"
+          : "Cloud photo upload failed",
+        { tone: "error" },
+      );
+      return;
+    }
+  }
 
-    state.monthlyPhotos[fieldKey] = photoData;
-    saveMonthlyPhotos();
-    applyMonthlyPhotoPreviews();
-  });
-  reader.readAsDataURL(file);
+  try {
+    await saveMonthlyPhotoLocally(file, fieldKey);
+  } catch {
+    setMonthlyStatus(
+      state.language === "ar" ? "فشل حفظ الصورة" : "Photo save failed",
+      { tone: "error" },
+    );
+  }
 });
 
 monthlyExportImageButton.addEventListener("click", async () => {
   try {
+    setMonthlyStatus(
+      state.language === "ar" ? "جاري تصدير الصورة..." : "Exporting photo...",
+      { loading: true },
+    );
     await downloadMonthlyPagesAsImage();
-    monthlySaveStatus.textContent =
-      state.language === "ar" ? "تم تصدير الصورة" : "Photo exported";
+    setMonthlyStatus(
+      state.language === "ar" ? "تم تصدير الصورة" : "Photo exported",
+      { tone: "success" },
+    );
   } catch {
-    monthlySaveStatus.textContent =
-      state.language === "ar" ? "فشل تصدير الصورة" : "Photo export failed";
+    setMonthlyStatus(
+      state.language === "ar" ? "فشل تصدير الصورة" : "Photo export failed",
+      { tone: "error" },
+    );
   }
 });
 
@@ -3175,21 +4478,29 @@ cancelFacilityButton.addEventListener("click", () => {
   facilityDialog.close();
 });
 
-facilityForm.addEventListener("submit", (event) => {
+facilityForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const name = facilityNameInput.value.trim();
   if (!name) {
     return;
   }
 
-  state.facilities.push({
-    id: createId("facility"),
-    name,
-    operators: [],
-  });
-  saveFacilities();
-  renderFacilities();
-  facilityDialog.close();
+  setFacilityDialogStatus(
+    state.language === "ar" ? "جاري حفظ المحطة..." : "Saving facility...",
+  );
+
+  try {
+    await createFacilityRecord(name);
+    setFacilityDialogStatus("");
+    facilityDialog.close();
+  } catch (error) {
+    const message =
+      error && typeof error === "object" && "message" in error
+        ? String(error.message)
+        : t("authStatusCloudError");
+    setFacilityDialogStatus(message, "error");
+    setLoginStatus(message, "error");
+  }
 });
 
 cancelOperatorButton.addEventListener("click", () => {
@@ -3200,7 +4511,7 @@ cancelEditFacilityButton.addEventListener("click", () => {
   editFacilityDialog.close();
 });
 
-deleteFacilityButton.addEventListener("click", () => {
+deleteFacilityButton.addEventListener("click", async () => {
   const facility = state.facilities.find(
     (item) => item.id === state.editingFacilityDialogId,
   );
@@ -3215,19 +4526,25 @@ deleteFacilityButton.addEventListener("click", () => {
     return;
   }
 
-  state.facilities = state.facilities.filter((item) => item.id !== facility.id);
+  try {
+    await deleteFacilityRecord(facility.id);
 
-  if (state.selectedFacilityId === facility.id) {
-    state.selectedFacilityId = "";
-    state.selectedOperatorId = "";
+    if (state.selectedFacilityId === facility.id) {
+      state.selectedFacilityId = "";
+      state.selectedOperatorId = "";
+    }
+
+    editFacilityDialog.close();
+  } catch (error) {
+    const message =
+      error && typeof error === "object" && "message" in error
+        ? String(error.message)
+        : t("authStatusCloudError");
+    setLoginStatus(message, "error");
   }
-
-  saveFacilities();
-  renderFacilities();
-  editFacilityDialog.close();
 });
 
-operatorForm.addEventListener("submit", (event) => {
+operatorForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const name = operatorNameInput.value.trim();
   if (!name || !state.editingFacilityId) {
@@ -3241,17 +4558,19 @@ operatorForm.addEventListener("submit", (event) => {
     return;
   }
 
-  facility.operators.push({
-    id: createId("operator"),
-    name,
-  });
-
-  operatorNameInput.value = "";
-  state.editingFacilityId = "";
-  operatorDialog.close();
-  saveFacilities();
-  renderFacilities();
-  renderSheetNames();
+  try {
+    await createOperatorRecord(facility.id, name);
+    operatorNameInput.value = "";
+    state.editingFacilityId = "";
+    operatorDialog.close();
+    renderSheetNames();
+  } catch (error) {
+    const message =
+      error && typeof error === "object" && "message" in error
+        ? String(error.message)
+        : t("authStatusCloudError");
+    setLoginStatus(message, "error");
+  }
 });
 
 facilityList.addEventListener("click", (event) => {
@@ -3301,13 +4620,13 @@ editOperatorList.addEventListener("click", (event) => {
   if (!editOperatorList.querySelector(".edit-operator-row")) {
     const empty = document.createElement("p");
     empty.className = "operator-empty";
-    empty.textContent = "No operators yet.";
+    empty.textContent = t("noOperators");
     editOperatorList.innerHTML = "";
     editOperatorList.append(empty);
   }
 });
 
-editFacilityForm.addEventListener("submit", (event) => {
+editFacilityForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const facility = state.facilities.find(
     (item) => item.id === state.editingFacilityDialogId,
@@ -3324,8 +4643,7 @@ editFacilityForm.addEventListener("submit", (event) => {
   const operatorRows = Array.from(
     editOperatorList.querySelectorAll(".edit-operator-row"),
   );
-  facility.name = nextName;
-  facility.operators = operatorRows
+  const nextOperators = operatorRows
     .map((row) => {
       const input = row.querySelector('input[data-operator-name-input="true"]');
       const name = input ? input.value.trim() : "";
@@ -3340,16 +4658,23 @@ editFacilityForm.addEventListener("submit", (event) => {
     })
     .filter(Boolean);
 
-  saveFacilities();
-  renderFacilities();
-  editFacilityDialog.close();
+  try {
+    await updateFacilityRecord(facility.id, nextName, nextOperators);
+    editFacilityDialog.close();
+  } catch (error) {
+    const message =
+      error && typeof error === "object" && "message" in error
+        ? String(error.message)
+        : t("authStatusCloudError");
+    setLoginStatus(message, "error");
+  }
 });
 
-setupForm.addEventListener("submit", (event) => {
+setupForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const date = sheetDateInput.value;
   const hourIndex = Number(startHourSelect.value);
-  openSheet(date, hourIndex);
+  await openSheet(date, hourIndex);
   setupDialog.close();
 });
 
@@ -3374,27 +4699,35 @@ manageSkipsButton.addEventListener("click", () => {
 
 exportExcelButton.addEventListener("click", () => {
   if (!state.date) {
-    saveStatus.textContent = "Choose a date first";
+    setDailyStatus("Choose a date first", { tone: "muted" });
     return;
   }
 
   downloadExcelFile();
-  saveStatus.textContent = "Excel exported";
+  setDailyStatus("Excel exported", { tone: "success" });
 });
 
 exportImageButton.addEventListener("click", async () => {
   if (!state.date) {
-    saveStatus.textContent = "Choose a date first";
+    setDailyStatus("Choose a date first", { tone: "muted" });
     return;
   }
 
   try {
+    setDailyStatus(
+      state.language === "ar" ? "جاري تصدير الصورة..." : "Exporting photo...",
+      { loading: true },
+    );
     await downloadSheetAsImage();
-    saveStatus.textContent =
-      state.language === "ar" ? "تم تصدير الصورة" : "Photo exported";
+    setDailyStatus(
+      state.language === "ar" ? "تم تصدير الصورة" : "Photo exported",
+      { tone: "success" },
+    );
   } catch {
-    saveStatus.textContent =
-      state.language === "ar" ? "فشل تصدير الصورة" : "Photo export failed";
+    setDailyStatus(
+      state.language === "ar" ? "فشل تصدير الصورة" : "Photo export failed",
+      { tone: "error" },
+    );
   }
 });
 
@@ -3440,9 +4773,18 @@ backToHomeButton.addEventListener("click", () => {
   showModuleScreen();
 });
 
-loginForm.addEventListener("submit", (event) => {
+loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  showHomeScreen();
+  const email = loginUsernameInput.value.trim();
+  const password = loginPasswordInput.value;
+  if (!email || !password) {
+    return;
+  }
+
+  const success = await signInWithSupabase(email, password);
+  if (success) {
+    loginPasswordInput.value = "";
+  }
 });
 
 cancelSkipButton.addEventListener("click", () => {
@@ -3642,6 +4984,56 @@ closeSettingsButton.addEventListener("click", () => {
   settingsDialog.close();
 });
 
+replaceMonthlyPhotoButton.addEventListener("click", () => {
+  if (!activeMonthlyPreviewField) {
+    return;
+  }
+
+  monthlyPhotoPreviewDialog.close();
+  monthlyPhotoPreviewImage.removeAttribute("src");
+  state.pendingMonthlyPhotoField = activeMonthlyPreviewField;
+  monthlyCameraInput.value = "";
+  monthlyCameraInput.click();
+});
+
+deleteMonthlyPhotoButton.addEventListener("click", async () => {
+  if (!activeMonthlyPreviewField) {
+    return;
+  }
+
+  const fieldKey = activeMonthlyPreviewField;
+  const photoValue = state.monthlyPhotos[fieldKey];
+  if (!photoValue) {
+    monthlyPhotoPreviewDialog.close();
+    monthlyPhotoPreviewImage.removeAttribute("src");
+    activeMonthlyPreviewField = "";
+    return;
+  }
+
+  try {
+    await deleteMonthlyPhotoFromStorage(photoValue);
+  } catch {
+    setMonthlyStatus(
+      state.language === "ar" ? "فشل حذف الصورة" : "Photo delete failed",
+      { tone: "error" },
+    );
+    return;
+  }
+
+  delete state.monthlyPhotos[fieldKey];
+  saveMonthlyPhotos();
+  applyMonthlyPhotoPreviews();
+  monthlyPhotoPreviewDialog.close();
+  monthlyPhotoPreviewImage.removeAttribute("src");
+  activeMonthlyPreviewField = "";
+});
+
+closeMonthlyPhotoPreviewButton.addEventListener("click", () => {
+  monthlyPhotoPreviewDialog.close();
+  monthlyPhotoPreviewImage.removeAttribute("src");
+  activeMonthlyPreviewField = "";
+});
+
 settingsChangeDateButton.addEventListener("click", () => {
   settingsDialog.close();
   openSetupButton.click();
@@ -3703,3 +5095,30 @@ renderTable();
 syncSheetScrollbars();
 renderFacilities();
 showLoginScreen();
+setLoginStatus(t("authStatusConnecting"));
+clearSupabaseSessionOnLoad()
+  .catch(() => {})
+  .finally(() => {
+    initializeSupabase().catch(() => {
+      state.supabaseEnabled = false;
+      supabaseClient = null;
+      useLocalFacilitiesSnapshot();
+      setLoginStatus(
+        isSupabaseConfigured() ? t("authStatusCloudRetry") : t("authStatusCloudError"),
+        isSupabaseConfigured() ? "muted" : "error",
+      );
+      showLoginScreen();
+    });
+  });
+
+window.setTimeout(() => {
+  ensureVisibleScreen();
+}, 250);
+
+window.addEventListener("error", () => {
+  ensureVisibleScreen();
+});
+
+window.addEventListener("unhandledrejection", () => {
+  ensureVisibleScreen();
+});

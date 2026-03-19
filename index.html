@@ -24,15 +24,18 @@
             title="Back"
           ></button>
           <h1 id="homeTitle" class="home-title">Electricity Daily Log</h1>
-          <button
-            id="homeLanguageButton"
-            class="ribbon-language-button"
-            type="button"
-            aria-label="Toggle language"
-            title="Toggle language"
-          >
-            A
-          </button>
+          <div class="ribbon-actions">
+            <span id="homeSyncBadge" class="sync-badge" data-state="local">Local</span>
+            <button
+              id="homeLanguageButton"
+              class="ribbon-language-button"
+              type="button"
+              aria-label="Toggle language"
+              title="Toggle language"
+            >
+              A
+            </button>
+          </div>
         </div>
         <div class="home-actions">
           <button
@@ -76,7 +79,7 @@
             <span id="loginUsernameText" class="strip-label">Username</span>
             <input
               id="loginUsernameInput"
-              type="text"
+              type="email"
               autocomplete="username"
             />
           </div>
@@ -88,7 +91,14 @@
               autocomplete="current-password"
             />
           </div>
-          <div class="setup-actions">
+          <div class="setup-actions login-actions">
+            <div id="loginLoaderWrap" class="login-loader-wrap hidden" aria-hidden="true">
+              <div class="login-loader" aria-hidden="true">
+                <span class="login-loader-bar"></span>
+                <span class="login-loader-bar"></span>
+                <span class="login-loader-bar"></span>
+              </div>
+            </div>
             <button
               id="enterFacilitiesButton"
               class="primary-button"
@@ -97,6 +107,9 @@
               Enter
             </button>
           </div>
+          <p id="loginStatusText" class="auth-status auth-status--login">
+            Supabase is not configured yet.
+          </p>
         </div>
       </form>
     </section>
@@ -112,15 +125,18 @@
             title="Back"
           ></button>
           <h1 id="moduleTitle" class="home-title">Work Areas</h1>
-          <button
-            id="moduleLanguageButton"
-            class="ribbon-language-button"
-            type="button"
-            aria-label="Toggle language"
-            title="Toggle language"
-          >
-            A
-          </button>
+          <div class="ribbon-actions">
+            <span id="moduleSyncBadge" class="sync-badge" data-state="local">Local</span>
+            <button
+              id="moduleLanguageButton"
+              class="ribbon-language-button"
+              type="button"
+              aria-label="Toggle language"
+              title="Toggle language"
+            >
+              A
+            </button>
+          </div>
         </div>
         <div class="module-grid">
           <button
@@ -174,15 +190,18 @@
             title="Back"
           ></button>
           <h1 id="monthlyPageTitle" class="home-title">Monthly Readings</h1>
-          <button
-            id="monthlyLanguageButton"
-            class="ribbon-language-button"
-            type="button"
-            aria-label="Toggle language"
-            title="Toggle language"
-          >
-            A
-          </button>
+          <div class="ribbon-actions">
+            <span id="monthlySyncBadge" class="sync-badge" data-state="local">Local</span>
+            <button
+              id="monthlyLanguageButton"
+              class="ribbon-language-button"
+              type="button"
+              aria-label="Toggle language"
+              title="Toggle language"
+            >
+              A
+            </button>
+          </div>
         </div>
         <div
           id="monthlyCameraNotice"
@@ -211,7 +230,18 @@
         </section>
 
         <section class="monthly-status-strip">
-          <span id="monthlySaveStatus" class="save-status">Ready</span>
+          <div class="status-feedback">
+            <div
+              id="monthlyStatusLoader"
+              class="status-loader hidden"
+              aria-hidden="true"
+            >
+              <span class="login-loader-bar"></span>
+              <span class="login-loader-bar"></span>
+              <span class="login-loader-bar"></span>
+            </div>
+            <span id="monthlySaveStatus" class="save-status">Ready</span>
+          </div>
         </section>
 
         <main class="monthly-stage">
@@ -253,6 +283,7 @@
           aria-label="Settings"
           title="Settings"
         ></button>
+        <span id="dailySyncBadge" class="sync-badge" data-state="local">Local</span>
       </div>
 
       <section class="control-strip">
@@ -318,7 +349,14 @@
         >
         <span id="progressLabel">Field 0 of 0</span>
         <span id="completionLabel">0%</span>
-        <span id="saveStatus" class="save-status">Ready</span>
+        <div class="status-feedback">
+          <div id="dailyStatusLoader" class="status-loader hidden" aria-hidden="true">
+            <span class="login-loader-bar"></span>
+            <span class="login-loader-bar"></span>
+            <span class="login-loader-bar"></span>
+          </div>
+          <span id="saveStatus" class="save-status">Ready</span>
+        </div>
       </section>
 
       <main class="sheet-stage">
@@ -374,6 +412,7 @@
           type="text"
           required
         />
+        <p id="facilityDialogStatus" class="dialog-status"></p>
         <div class="setup-actions">
           <button id="cancelFacilityButton" class="ghost-button" type="button">
             Close
@@ -597,6 +636,48 @@
       </form>
     </dialog>
 
+    <dialog id="monthlyPhotoPreviewDialog">
+      <div class="monthly-photo-preview-shell">
+        <img
+          id="monthlyPhotoPreviewImage"
+          class="monthly-photo-preview-image"
+          alt="Monthly field photo preview"
+        />
+        <div class="setup-actions">
+          <button
+            id="replaceMonthlyPhotoButton"
+            class="primary-button"
+            type="button"
+          >
+            Replace Photo
+          </button>
+          <button
+            id="deleteMonthlyPhotoButton"
+            class="ghost-button danger-button"
+            type="button"
+          >
+            Delete Photo
+          </button>
+          <button
+            id="closeMonthlyPhotoPreviewButton"
+            class="ghost-button"
+            type="button"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </dialog>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      window.LOG_SHEET_SUPABASE_CONFIG =
+        window.LOG_SHEET_SUPABASE_CONFIG || {
+          url: "",
+          anonKey: "",
+        };
+    </script>
+    <script src="./supabase-config.local.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="./app.js"></script>
   </body>
